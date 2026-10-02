@@ -1,0 +1,38 @@
+{
+  "name": "browser-surface-lab",
+  "version": "0.0.0",
+  "description": "Neutral browser workloads and a theme contract for testing how containers host real web content.",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "contract": "node scripts/verify-lab-contract.mjs",
+    "dev:fixtures": "vite --host 127.0.0.1 --port 5185 --strictPort",
+    "freeze:inputs": "node scripts/freeze-protected-inputs.mjs",
+    "integrity": "node scripts/verify-protected-inputs.mjs",
+    "test:browser": "playwright test",
+    "test:browser:headed": "playwright test --headed",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xterm/addon-webgl": "0.19.0",
+    "@xterm/xterm": "6.0.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "@types/three": "0.185.4",
+    "typescript": "7.0.2",
+    "vite": "8.2.2"
+  },
+  "engines": {
+    "node": ">=22.12.0 <26"
+  },
+  "packageManager": "pnpm@10.23.0"
+}

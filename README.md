@@ -1,0 +1,120 @@
+# Browser Surface Lab
+
+Fixed, neutral browser workloads for testing how a container hosts real web
+content. Every fixture runs as a standalone page, speaks a small `postMessage`
+protocol, and accepts a host theme. Fixtures know nothing about any pane system
+or host.
+
+## Fixtures
+
+| Fixture       | Fixed example                                     | Runtime                   |
+| ------------- | ------------------------------------------------- | ------------------------- |
+| `dom`         | 12 deep scrolling sections with 216 changing rows | Browser DOM               |
+| `forms`       | 24 native controls with retained focus and input  | Browser DOM               |
+| `react`       | 180 externally updated signal cards               | `react`, `react-dom`      |
+| `canvas-2d`   | 960×540 field with 240 animated particles         | Canvas 2D                 |
+| `video`       | Local 1280×720, 30 fps, eight-second VP9 video    | Native `<video>`          |
+| `webgl-2`     | Fixed shader, geometry, and 64×64 texture         | Native WebGL 2            |
+| `webgpu`      | Fixed pipeline, buffers, and 64×64 texture        | Native WebGPU             |
+| `xterm-dom`   | Fixed ANSI byte stream at 20 writes per second    | `@xterm/xterm`            |
+| `xterm-webgl` | The same ANSI bytes and terminal dimensions       | `@xterm/addon-webgl`      |
+| `mixed`       | Forms, Canvas 2D, video, and xterm together       | Reuses the fixtures above |
+
+These are the Tier 1 workloads. `workload-manifest.json` is the authority for
+their sizes, rates, and counts.
+
+`three-reactor` and `three-tidal` are separately selectable procedural Three.js
+demos. They are not part of the Tier 1 manifest. They use procedural geometry
+and shaders with no remote assets, cap the drawing-buffer pixel ratio at 1.5,
+release their WebGL context while paused, and share one renderer per document.
+
+## Pages
+
+- `fixture.html?fixture=<id>` mounts one fixture. Add `embedding=surface` to
+  drop the standalone page chrome when framing it.
+- `gallery.html?count=18` repeats the Tier 1 fixtures in a plain grid, without a
+  pane system. `gallery.html?fixture=<id>&count=<n>` repeats one fixture. Use it
+  as the baseline when deciding whether a cost comes from the host or the
+  workload.
+- `index.html` links to both.
+
+## Protocol
+
+Fixtures implement `browser-surface-lab/v1`. After mounting, a fixture posts
+`{ protocol, type: "ready", snapshot }` to its parent. A host sends
+`{ protocol, command, requestId }`, where `command` is `start`, `pause`,
+`resume`, or `reset`. The fixture replies with `type: "snapshot"`, the same
+`requestId`, and its current snapshot. Snapshots carry proof counters, so hidden,
+paused, or failed fixtures cannot pass as completed work. In the same document,
+`window.__surfaceLab` exposes `command()` and `snapshot()` for automation.
+
+## Theme contract
+
+Fixture pages accept `colorMode=light` or `colorMode=dark`, or a `theme` query
+parameter containing a JSON object with `colorMode` and `styles`. Only the
+embedding parent can update a framed page:
+
+```js
+frame.contentWindow.postMessage(
+  {
+    protocol: "browser-surface-lab/v1",
+    command: "theme",
+    requestId: "appearance-1",
+    theme: {
+      colorMode: "light",
+      styles: { surface: "#ffffff", text: "#202020", "font-family": "sans-serif" },
+    },
+  },
+  fixtureOrigin,
+);
+```
+
+The reply has `type: "theme-applied"` and the same `requestId`.
+
+- Color styles: `page`, `surface`, `surface-raised`, `surface-sunken`, `text`,
+  `text-strong`, `text-muted`, `text-subtle`, `border`, `accent`, `accent-alt`,
+  `positive`, `warning`, and `focus`.
+- Typography and shape styles: `font-family`, `font-mono`, `font-size`,
+  `font-size-heading`, `font-size-small`, `font-size-label`, `font-size-tiny`,
+  `font-weight`, `font-weight-heading`, `line-height`, `line-height-heading`,
+  and `radius`.
+
+Values must be concrete CSS values. URLs, references, and unknown keys are
+rejected. Omitted styles use the selected mode's defaults. A family name does
+not transfer font files, so custom web fonts must also be available in the
+fixture document.
+
+Theme updates keep the workload, form values, terminal buffers, and Three.js
+simulation state. Canvas, GPU, and Three.js surfaces repaint in the new palette.
+A paused Three.js scene repaints once and does not resume. Media and fixed GPU
+textures keep their own content. Appearance never changes workload sizes or
+rates.
+
+## Hosting the lab
+
+A host builds or serves this repository and frames `fixture.html` pages. It
+drives them only through the protocol and theme contract. For example,
+[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground)
+expects this repository beside its checkout and serves a Vite build of
+`fixture.html` under `/surface-lab/`. It also serves the video asset at
+`/assets/tier1-video.webm`.
+
+## Commands
+
+```sh
+pnpm install --frozen-lockfile
+pnpm contract        # pinned dependencies and fixture isolation
+pnpm typecheck
+pnpm build
+pnpm test:browser    # Playwright with installed Chrome; serves 127.0.0.1:5185
+pnpm integrity       # compares the tree with receipts/protected-inputs.json
+pnpm freeze:inputs   # records a new protected-input baseline
+```
+
+`pnpm dev:fixtures` serves the lab at `http://127.0.0.1:5185`. Browser tests use
+`localhost:5185` as a second origin for cross-origin framing. The WebGPU and
+WebGL fixtures report themselves as unsupported where the browser lacks the API.
+
+## License
+
+[Apache License 2.0](LICENSE).

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "tier": "tier-1",
+  "fixtures": {
+    "dom": {
+      "rowsPerSection": 18,
+      "sectionCount": 12,
+      "updateIntervalMs": 100
+    },
+    "forms": {
+      "fieldCount": 24,
+      "updateIntervalMs": 250
+    },
+    "react": {
+      "cellCount": 180,
+      "updateIntervalMs": 100
+    },
+    "canvas-2d": {
+      "height": 540,
+      "particleCount": 240,
+      "targetFramesPerSecond": 60,
+      "width": 960
+    },
+    "video": {
+      "durationSeconds": 8,
+      "framesPerSecond": 30,
+      "height": 720,
+      "source": "/assets/tier1-video.webm",
+      "width": 1280
+    },
+    "webgl-2": {
+      "height": 540,
+      "targetFramesPerSecond": 60,
+      "textureSize": 64,
+      "width": 960
+    },
+    "webgpu": {
+      "height": 540,
+      "targetFramesPerSecond": 60,
+      "textureSize": 64,
+      "width": 960
+    },
+    "xterm-dom": {
+      "cols": 80,
+      "initialLines": 40,
+      "rows": 24,
+      "scrollback": 2000,
+      "writeIntervalMs": 50
+    },
+    "xterm-webgl": {
+      "cols": 80,
+      "initialLines": 40,
+      "rows": 24,
+      "scrollback": 2000,
+      "writeIntervalMs": 50
+    },
+    "mixed": {
+      "children": ["forms", "canvas-2d", "video", "xterm-dom"]
+    }
+  }
+}
