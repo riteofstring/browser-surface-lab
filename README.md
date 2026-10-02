@@ -94,9 +94,9 @@ rates.
 
 A host builds or serves this repository and frames `fixture.html` pages. It
 drives them only through the protocol and theme contract. For example,
-[onirigiri-playground](https://github.com/riteofstring/onirigiri-playground)
-expects this repository beside its checkout and serves a Vite build of
-`fixture.html` under `/surface-lab/`. It also serves the video asset at
+the [Onirigiri playground](https://github.com/riteofstring/onirigiri/tree/main/playground)
+expects this repository beside its `onirigiri` checkout and serves a Vite
+build of `fixture.html` under `/surface-lab/`. It also serves the video asset at
 `/assets/tier1-video.webm`.
 
 ## Commands

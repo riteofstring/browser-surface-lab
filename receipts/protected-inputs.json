@@ -1,5 +1,5 @@
 {
-  "aggregate": "02c3333015ab1980801f769cec10511f5595a94f156254614290660f35e9adf8",
+  "aggregate": "77b3d1de9725f956284bf46452ec56f14c14b0ef5a8efe0949ef9c307cf6d03d",
   "entries": [
     {
       "path": ".gitignore",
@@ -63,8 +63,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "b8d5a33218b5d9e7d944834d0f5317d9d8b389bf5dcecd0694e558f4b37bfed0",
-      "size": 5503
+      "sha256": "5d162b33ac2883adcd3b7de51bdcf9b204332ce24ae23f58f06e01cb74bea77f",
+      "size": 5529
     },
     {
       "path": "scripts/freeze-protected-inputs.mjs",
