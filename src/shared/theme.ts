@@ -1,5 +1,13 @@
+export interface FixtureFont {
+  family: string;
+  source: string;
+  style?: "italic" | "normal";
+  weight?: string;
+}
+
 export interface FixtureTheme {
   colorMode: "dark" | "light";
+  fonts?: FixtureFont[];
   styles?: Partial<Record<FixtureStyleName, string>>;
 }
 
@@ -49,10 +57,46 @@ function styleProperty(name: string): string | null {
   return null;
 }
 
+function fontSource(source: string): URL | null {
+  try {
+    const url = new URL(source, window.location.href);
+    return url.origin === window.location.origin &&
+      /\.woff2?$/u.test(url.pathname)
+      ? url
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function isFixtureFont(value: unknown): value is FixtureFont {
+  if (!value || typeof value !== "object") return false;
+  const font = value as Partial<FixtureFont>;
+  return (
+    typeof font.family === "string" &&
+    /^[\p{L}\p{N} ._-]{1,64}$/u.test(font.family) &&
+    typeof font.source === "string" &&
+    font.source.length <= 512 &&
+    fontSource(font.source) !== null &&
+    (font.weight === undefined ||
+      (typeof font.weight === "string" && /^[1-9]00$/u.test(font.weight))) &&
+    (font.style === undefined ||
+      font.style === "normal" ||
+      font.style === "italic")
+  );
+}
+
 export function isFixtureTheme(value: unknown): value is FixtureTheme {
   if (!value || typeof value !== "object") return false;
   const theme = value as Partial<FixtureTheme>;
   if (theme.colorMode !== "dark" && theme.colorMode !== "light") return false;
+  if (
+    theme.fonts !== undefined &&
+    (!Array.isArray(theme.fonts) ||
+      theme.fonts.length > 8 ||
+      !theme.fonts.every(isFixtureFont))
+  )
+    return false;
   if (theme.styles === undefined) return true;
   if (
     !theme.styles ||
@@ -72,8 +116,46 @@ export function isFixtureTheme(value: unknown): value is FixtureTheme {
   });
 }
 
+const hostFonts = new Map<string, FontFace>();
+
+function applyFixtureFonts(fonts: readonly FixtureFont[]): void {
+  const wanted = new Map(
+    fonts.map((font) => {
+      const descriptors = {
+        style: font.style ?? "normal",
+        weight: font.weight ?? "400",
+      };
+      const href = fontSource(font.source)!.href;
+      return [
+        JSON.stringify([font.family, href, descriptors]),
+        { family: font.family, href, descriptors },
+      ] as const;
+    }),
+  );
+  for (const [key, face] of hostFonts)
+    if (!wanted.has(key)) {
+      document.fonts.delete(face);
+      hostFonts.delete(key);
+    }
+  for (const [key, font] of wanted) {
+    if (hostFonts.has(key)) continue;
+    const face = new FontFace(
+      font.family,
+      `url(${JSON.stringify(font.href)})`,
+      font.descriptors,
+    );
+    hostFonts.set(key, face);
+    document.fonts.add(face);
+    void face
+      .load()
+      .then(() => window.dispatchEvent(new Event("surface-lab-themechange")))
+      .catch(() => {});
+  }
+}
+
 export function applyFixtureTheme(theme: FixtureTheme): void {
   const root = document.documentElement;
+  applyFixtureFonts(theme.fonts ?? []);
   root.dataset.colorMode = theme.colorMode;
   for (const name of [...colorStyles, ...textStyles]) {
     const value = theme.styles?.[name];

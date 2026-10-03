@@ -30,6 +30,10 @@ export async function mountFixture(
     const { createThreeFixture } = await import("./three");
     return createThreeFixture(fixtureId, root, options);
   }
+  if (fixtureId === "hover") {
+    const { createHoverFixture } = await import("./hover");
+    return createHoverFixture(root, options);
+  }
   const factory = await fixtureFactoryLoaders[fixtureId]();
   return factory(root, options);
 }

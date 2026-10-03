@@ -28,6 +28,15 @@ demos. They are not part of the Tier 1 manifest. They use procedural geometry
 and shaders with no remote assets, cap the drawing-buffer pixel ratio at 1.5,
 release their WebGL context while paused, and share one renderer per document.
 
+`hover` is a playable Three.js take on Microsoft's 1995 _Hover!_: capture three
+flags in the rival's colour in a walled arena before the rival hovercraft takes
+yours, with bumper bots in the way, jump, wall and cloak pods, and speed and
+slow pads. Arrow keys drive; A or Space jumps, S drops a wall behind you, D
+cloaks, and Enter or P pauses. Coarse pointers get on-screen buttons. It renders
+only while a game is in play, caps the pixel ratio at 1.5, and when paused by
+its host keeps a still of the last frame and releases its WebGL context. Like
+the other Three.js demos it is outside the Tier 1 manifest.
+
 ## Pages
 
 - `fixture.html?fixture=<id>` mounts one fixture. Add `embedding=surface` to
@@ -44,7 +53,13 @@ Fixtures implement `browser-surface-lab/v1`. After mounting, a fixture posts
 `{ protocol, type: "ready", snapshot }` to its parent. A host sends
 `{ protocol, command, requestId }`, where `command` is `start`, `pause`,
 `resume`, or `reset`. The fixture replies with `type: "snapshot"`, the same
-`requestId`, and its current snapshot. Snapshots carry proof counters, so hidden,
+`requestId`, and its current snapshot.
+
+A framed fixture also posts `{ protocol, type: "key", key, code, altKey,
+ctrlKey, metaKey, shiftKey, repeat }` to its parent for every keydown it did not
+handle (`defaultPrevented` is false) that carries Alt, Control or Meta, or is
+Escape. Hosts can replay these as their own shortcuts, so keyboard focus inside
+a frame does not trap the host's navigation. Snapshots carry proof counters, so hidden,
 paused, or failed fixtures cannot pass as completed work. In the same document,
 `window.__surfaceLab` exposes `command()` and `snapshot()` for automation.
 
@@ -81,8 +96,11 @@ The reply has `type: "theme-applied"` and the same `requestId`.
 
 Values must be concrete CSS values. URLs, references, and unknown keys are
 rejected. Omitted styles use the selected mode's defaults. A family name does
-not transfer font files, so custom web fonts must also be available in the
-fixture document.
+not transfer font files. To use a custom web font, add `fonts`: up to eight
+`{ family, source, weight?, style? }` entries whose `source` is a `.woff2` or
+`.woff` URL on the fixture's own origin. The fixture loads them with the
+FontFace API and drops fonts a later theme omits; any other source rejects the
+whole theme.
 
 Theme updates keep the workload, form values, terminal buffers, and Three.js
 simulation state. Canvas, GPU, and Three.js surfaces repaint in the new palette.
@@ -99,6 +117,11 @@ expects this repository beside its `onirigiri` checkout and serves a Vite
 build of `fixture.html` under `/surface-lab/`. It also serves the video asset at
 `/assets/tier1-video.webm`.
 
+A host that only needs the Three.js demos can instead build a self-contained
+copy with `pnpm build:embed --outDir <dir>`. It emits `fixture.html` and its
+chunks with relative URLs and no `public/` assets, so it works from any
+same-origin subdirectory; each fixture still loads only its own chunks.
+
 ## Commands
 
 ```sh
@@ -106,6 +129,7 @@ pnpm install --frozen-lockfile
 pnpm contract        # pinned dependencies and fixture isolation
 pnpm typecheck
 pnpm build
+pnpm build:embed     # fixture.html only, relative base, no public assets
 pnpm test:browser    # Playwright with installed Chrome; serves 127.0.0.1:5185
 pnpm integrity       # compares the tree with receipts/protected-inputs.json
 pnpm freeze:inputs   # records a new protected-input baseline

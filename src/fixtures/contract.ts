@@ -13,7 +13,11 @@ export const tierOneFixtureIds = [
 
 export type TierOneFixtureId = (typeof tierOneFixtureIds)[number];
 
-export type FixtureId = TierOneFixtureId | "three-reactor" | "three-tidal";
+export type FixtureId =
+  | TierOneFixtureId
+  | "three-reactor"
+  | "three-tidal"
+  | "hover";
 
 export type WorkloadCommand = "pause" | "reset" | "resume" | "start";
 
@@ -51,7 +55,8 @@ export function isFixtureId(value: string): value is FixtureId {
   return (
     isTierOneFixtureId(value) ||
     value === "three-reactor" ||
-    value === "three-tidal"
+    value === "three-tidal" ||
+    value === "hover"
   );
 }
 

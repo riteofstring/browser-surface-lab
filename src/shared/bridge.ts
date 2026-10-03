@@ -61,7 +61,32 @@ export function installFixtureBridge(handle: FixtureHandle): () => void {
       }
     });
   };
+  const forwardKey = (event: KeyboardEvent): void => {
+    if (
+      window.parent === window ||
+      event.defaultPrevented ||
+      ["Alt", "Control", "Meta", "Shift"].includes(event.key) ||
+      !(event.altKey || event.ctrlKey || event.metaKey || event.key === "Escape")
+    ) {
+      return;
+    }
+    window.parent.postMessage(
+      {
+        protocol,
+        type: "key",
+        key: event.key,
+        code: event.code,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        shiftKey: event.shiftKey,
+        repeat: event.repeat,
+      },
+      "*",
+    );
+  };
   window.addEventListener("message", onMessage);
+  window.addEventListener("keydown", forwardKey);
   window.parent.postMessage(
     {
       protocol,
@@ -73,6 +98,7 @@ export function installFixtureBridge(handle: FixtureHandle): () => void {
 
   return () => {
     window.removeEventListener("message", onMessage);
+    window.removeEventListener("keydown", forwardKey);
     delete window.__surfaceLab;
   };
 }

@@ -18,5 +18,11 @@
     "target": "ES2024",
     "types": ["node", "vite/client"]
   },
-  "include": ["playwright.config.ts", "src", "tests", "vite.config.ts"]
+  "include": [
+    "playwright.config.ts",
+    "src",
+    "tests",
+    "vite.config.ts",
+    "vite.embed.config.ts"
+  ]
 }

@@ -48,6 +48,7 @@ for (const fixture of [
   "mixed",
   "three-reactor",
   "three-tidal",
+  "hover",
 ]) {
   test(`${fixture} accepts host appearance without remounting its workload`, async ({
     page,
