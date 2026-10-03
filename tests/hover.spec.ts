@@ -26,9 +26,7 @@ test("hover drives to a flag, pauses with its pixels and resumes on request", as
   await expect
     .poll(async () => (await snapshot(page)).counters.playerFlags)
     .toBe(1);
-  await expect(page.locator('.hover-pips[data-team="player"]')).toHaveText(
-    "●○○",
-  );
+  await expect(page.locator('.hover-pips[data-team="blue"]')).toHaveText("●○○");
 
   await page.evaluate(() => window.__surfaceLab!.command("pause"));
   const paused = await snapshot(page);
@@ -51,28 +49,27 @@ test("hover drives to a flag, pauses with its pixels and resumes on request", as
   expect((await snapshot(page)).counters.playerFlags).toBe(1);
 });
 
-test("hover spends items and resets to a fresh game", async ({ page }) => {
+test("hover collects a spring pod, springs with it and resets to round one", async ({
+  page,
+}) => {
   await page.goto("/fixture.html?fixture=hover");
+  const spring = page.locator('.hover-items [data-item="spring"]');
+  await expect(spring).toHaveText("×0");
   await page.getByRole("button", { name: "Start" }).click();
+  await hold(page, "ArrowUp", 500);
+  await expect(spring).toHaveText("×1");
   await page.keyboard.press("a");
-  await page.waitForTimeout(80);
-  await expect(page.locator('.hover-items [data-item="spring"]')).toHaveText(
-    "×0",
-  );
-  await page.keyboard.press("s");
-  await page.keyboard.press("d");
-  await expect(page.locator('.hover-items [data-item="barrier"]')).toHaveText(
-    "×0",
-  );
-  await expect(page.locator('.hover-items [data-item="cloak"]')).toHaveText(
-    "×0",
-  );
+  await expect(spring).toHaveText("×0");
+  await expect
+    .poll(async () => Number((await snapshot(page)).details.y))
+    .toBeGreaterThan(0.5);
   await page.evaluate(() => window.__surfaceLab!.command("reset"));
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
-  await expect(page.locator('.hover-items [data-item="spring"]')).toHaveText(
-    "×1",
-  );
-  expect((await snapshot(page)).counters.steps).toBe(0);
+  await expect(spring).toHaveText("×0");
+  const fresh = await snapshot(page);
+  expect(fresh.counters.steps).toBe(0);
+  expect(fresh.details.round).toBe(0);
+  expect(fresh.details.maze).toBe("castle");
 });
 
 test("framed fixtures forward unhandled shortcut keys and loads same-origin host fonts", async ({

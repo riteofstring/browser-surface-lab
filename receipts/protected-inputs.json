@@ -1,5 +1,5 @@
 {
-  "aggregate": "7df863e36c78f90b4cbb175d271e4c390c641ce844c1455847ec8d325b33afe3",
+  "aggregate": "ac106d5dbf1d6f1ea0755e9433125887f5c988745de33e0cfb00bd4812ac9e63",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -98,8 +98,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "4850d198d8ad04dc5a1652efe7717c64161842d938eb0488193b3668d20276c4",
-      "size": 7466
+      "sha256": "59a1e978746db2c4d8699ead3125b9cd72556e43f026a59f6abecee29c31520e",
+      "size": 8150
     },
     {
       "path": "scripts/freeze-protected-inputs.mjs",
@@ -157,24 +157,44 @@
       "size": 4143
     },
     {
+      "path": "src/fixtures/hover-hud.ts",
+      "sha256": "19e7e3e646dffbaa0cf066b9dd0c08327f7490940259f643f000db3a26d194e3",
+      "size": 7795
+    },
+    {
+      "path": "src/fixtures/hover-mazes.ts",
+      "sha256": "9d2c51d54af151885b7720f33d2865f4a40dd43849fc3a93b961d36c6f8fb3af",
+      "size": 5963
+    },
+    {
       "path": "src/fixtures/hover-render.ts",
-      "sha256": "cfe5b8affda0a71d72011893b051bdd6eedf5b6d1b58cad3c1731ff0e93f6569",
-      "size": 15048
+      "sha256": "bdec91f87c50bc4454cb660939489bd49d237a8f39acbdefd6f48bd303ed1372",
+      "size": 18365
+    },
+    {
+      "path": "src/fixtures/hover-sound.ts",
+      "sha256": "60370db7d0a3f67a69d4db97eda9dcb6ac50529b8ac1bc3dc0a658640a5efb4f",
+      "size": 1758
+    },
+    {
+      "path": "src/fixtures/hover-textures.ts",
+      "sha256": "150b5fb71b1aa76caf5a0017a7ca2fe4ab3a23e90d206c63168a30c27248f473",
+      "size": 6678
     },
     {
       "path": "src/fixtures/hover-world.ts",
-      "sha256": "c427297d779c2ee4a753e277d7e0cf4c9981302228db86888265bb4e3073b2f9",
-      "size": 19181
+      "sha256": "d36261e2811b430021850cff56a13402e7097c82756da0beb5a10d0f45b4c4fe",
+      "size": 27880
     },
     {
       "path": "src/fixtures/hover.css",
-      "sha256": "6aefe984053d33b7312ecbfbc065c6c4649edbfec6c98be00e796d9386b5114f",
-      "size": 5678
+      "sha256": "7de8acbe910feabae8d2366e18723a3a5dc24f4d8ad767bbfc47287421f38aee",
+      "size": 7528
     },
     {
       "path": "src/fixtures/hover.ts",
-      "sha256": "bd80dc6104d682a384e82edd5d3e4edd91f9d07bdef86b5a515d785cf28137a4",
-      "size": 15847
+      "sha256": "bba6464e2c3b8867fc0282daf85f74372660060cba4dabda3e56ee8856148de1",
+      "size": 12828
     },
     {
       "path": "src/fixtures/lifecycle.ts",
@@ -263,8 +283,8 @@
     },
     {
       "path": "tests/hover.spec.ts",
-      "sha256": "3edaf04fbb85fdce1a09558f753f759bce431582039eecab4b38f7abccb866db",
-      "size": 5804
+      "sha256": "05dcae267b3bd54511e21fecb0fb1c35dc7f1f9bc697daee230c6451e90aa326",
+      "size": 5825
     },
     {
       "path": "tests/theme.spec.ts",

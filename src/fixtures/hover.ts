@@ -1,21 +1,20 @@
 import type { FixtureHandle, FixtureMountOptions } from "./contract";
 import { createFixtureLifecycle } from "./lifecycle";
-import { fixtureColor, observeFixtureTheme } from "../shared/theme";
+import { observeFixtureTheme } from "../shared/theme";
 import { createHoverRenderer, type HoverRenderer } from "./hover-render";
+import { createHud, hudMarkup, overlayFor } from "./hover-hud";
+import { createHoverSound } from "./hover-sound";
+import { mazes } from "./hover-mazes";
 import {
-  arenaSize,
-  cellSize,
   emptyControls,
-  flagsToWin,
   HoverWorld,
-  isWall,
   type Controls,
   type GameState,
 } from "./hover-world";
 import "./hover.css";
 
 const step = 1 / 60;
-const mapScale = 5;
+const bestKey = "browser-surface-lab:hover:best";
 
 const driveKeys: Record<string, keyof Controls> = {
   ArrowUp: "thrust",
@@ -36,44 +35,36 @@ const touchButton = (control: keyof Controls, label: string, face: string) =>
 const touchItem = (control: keyof Controls, item: string, label: string) =>
   touchButton(control, label, `${label}<b data-item="${item}"></b>`);
 
-// Steering under the left thumb, thrust under the right, items between.
+// Steering under the left thumb, thrust under the right, items above.
 const touchBar = `<div class="hover-touch">
   <div class="hover-touch-group">${touchButton("left", "Turn left", "◀")}${touchButton("right", "Turn right", "▶")}</div>
-  <div class="hover-touch-group hover-touch-items">${touchItem("jump", "spring", "Jump")}${touchItem("barrier", "barrier", "Wall")}${touchItem("cloak", "cloak", "Cloak")}</div>
+  <div class="hover-touch-group hover-touch-items">${touchItem("jump", "spring", "Spring")}${touchItem("barrier", "barrier", "Wall")}${touchItem("cloak", "cloak", "Cloak")}</div>
   <div class="hover-touch-group">${touchButton("reverse", "Reverse", "▼")}${touchButton("thrust", "Thrust", "▲")}</div>
 </div>`;
 
-const overlays: Record<
-  Exclude<GameState, "playing">,
-  { heading: string; body: string; action: string }
-> = {
-  ready: {
-    heading: "HOVER!",
-    body: `Grab ${flagsToWin} flags in your rival's colour before its hovercraft takes yours.`,
-    action: "Start",
-  },
-  paused: { heading: "Paused", body: "", action: "Resume" },
-  won: { heading: "You win!", body: "", action: "Play again" },
-  lost: {
-    heading: "Out-flagged",
-    body: "The rival took your flags.",
-    action: "Try again",
-  },
+// Like Hover!'s Maze Type option: `maze=city` starts the cycle there.
+const firstRound = Math.max(
+  0,
+  mazes.findIndex(
+    (maze) => maze.name === new URLSearchParams(location.search).get("maze"),
+  ),
+);
+
+const readBest = () => {
+  try {
+    return Number(localStorage.getItem(bestKey)) || 0;
+  } catch {
+    return 0;
+  }
 };
 
-const flagColors = { rival: "accent-alt", player: "accent" } as const;
-
-const mapMarkers = {
-  player: { color: "text-strong", size: 5 },
-  rival: { color: "accent-alt", size: 5 },
-  dumbot: { color: "text-muted", size: 3 },
-} as const;
-
-const pips = (count: number) =>
-  "●".repeat(count) + "○".repeat(Math.max(0, flagsToWin - count));
-
-const clockText = (seconds: number) =>
-  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+const saveBest = (score: number) => {
+  try {
+    localStorage.setItem(bestKey, String(score));
+  } catch {
+    /* Storage can be unavailable in framed or private documents. */
+  }
+};
 
 export function createHoverFixture(
   container: HTMLElement,
@@ -85,26 +76,14 @@ export function createHoverFixture(
   root.tabIndex = 0;
   root.setAttribute(
     "aria-label",
-    "Hover! Arrow keys drive, A or Space jumps, S drops a wall, D cloaks, Enter starts or pauses.",
+    "Hover! Arrow keys drive, A or Space jumps, S drops a wall, D cloaks, Enter starts or pauses, M mutes.",
   );
   root.innerHTML = `<div class="hover-viewport"></div>
-  <div class="hover-hud" aria-hidden="true">
-    <div class="hover-score">
-      <span class="hover-label">You</span><span class="hover-pips" data-team="player"></span>
-      <span class="hover-label">Rival</span><span class="hover-pips" data-team="rival"></span>
-    </div>
-    <output class="hover-clock"></output>
-    <div class="hover-items">
-      <span><kbd>A</kbd>Jump <b data-item="spring"></b></span>
-      <span><kbd>S</kbd>Wall <b data-item="barrier"></b></span>
-      <span><kbd>D</kbd>Cloak <b data-item="cloak"></b></span>
-    </div>
-    <canvas class="hover-map" width="${arenaSize.width * mapScale}" height="${arenaSize.depth * mapScale}"></canvas>
-  </div>
+  ${hudMarkup}
   <div class="hover-overlay">
     <h2></h2><p class="hover-message"></p>
     <button type="button" class="hover-action"></button>
-    <p class="hover-help">Arrows drive · A/Space jump · S wall · D cloak · Enter pause</p>
+    <p class="hover-help">Arrows drive · A/Space spring · S wall · D cloak · Enter pause · M mute</p>
   </div>
   ${touchBar}
   <div class="hover-error" hidden><p role="alert"></p><button type="button">Retry graphics</button></div>`;
@@ -113,24 +92,12 @@ export function createHoverFixture(
   const heading = overlay.querySelector("h2")!;
   const message = overlay.querySelector<HTMLElement>(".hover-message")!;
   const action = overlay.querySelector<HTMLButtonElement>(".hover-action")!;
-  const clock = root.querySelector<HTMLOutputElement>(".hover-clock")!;
-  const map = root.querySelector<HTMLCanvasElement>(".hover-map")!;
-  const mapContext = map.getContext("2d")!;
-  const playerPips = root.querySelector<HTMLElement>('[data-team="player"]')!;
-  const rivalPips = root.querySelector<HTMLElement>('[data-team="rival"]')!;
-  const itemCounts = [...root.querySelectorAll<HTMLElement>("[data-item]")].map(
-    (element) => ({
-      element,
-      item: element.dataset.item as keyof HoverWorld["inventory"],
-    }),
-  );
   const error = root.querySelector<HTMLElement>(".hover-error")!;
   const retry = error.querySelector("button")!;
-  const mapBase = document.createElement("canvas");
-  mapBase.width = map.width;
-  mapBase.height = map.height;
+  const hud = createHud(root);
+  const sound = createHoverSound();
 
-  let world = new HoverWorld();
+  let world = new HoverWorld(firstRound);
   let controls = emptyControls();
   let view: HoverRenderer | null = null;
   let running = false;
@@ -144,12 +111,7 @@ export function createHoverFixture(
   let contextLosses = 0;
   let mapAge = Infinity;
   let shownState: GameState | null = null;
-  const hudText = new Map<HTMLElement, string>();
-  const setText = (element: HTMLElement, text: string) => {
-    if (hudText.get(element) === text) return;
-    hudText.set(element, text);
-    element.textContent = text;
-  };
+  let best = readBest();
 
   const fail = (text: string) => {
     supported = false;
@@ -158,71 +120,32 @@ export function createHoverFixture(
     error.querySelector("p")!.textContent = text;
   };
 
-  const drawMapBase = () => {
-    const context = mapBase.getContext("2d")!;
-    context.clearRect(0, 0, mapBase.width, mapBase.height);
-    context.fillStyle = fixtureColor(root, "surface-sunken");
-    context.fillRect(0, 0, mapBase.width, mapBase.height);
-    context.fillStyle = fixtureColor(root, "border");
-    for (let row = 0; row < arenaSize.depth; row++)
-      for (let column = 0; column < arenaSize.width; column++)
-        if (isWall(column, row))
-          context.fillRect(
-            column * mapScale,
-            row * mapScale,
-            mapScale,
-            mapScale,
-          );
-  };
-
-  const drawMap = () => {
-    mapContext.drawImage(mapBase, 0, 0);
-    const scale = mapScale / cellSize;
-    const dot = (
-      x: number,
-      z: number,
-      name: Parameters<typeof fixtureColor>[1],
-      size: number,
-    ) => {
-      mapContext.fillStyle = fixtureColor(root, name);
-      mapContext.fillRect(
-        x * scale - size / 2,
-        z * scale - size / 2,
-        size,
-        size,
-      );
-    };
-    for (const flag of world.flags)
-      if (!flag.taken) dot(flag.x, flag.z, flagColors[flag.owner], 4);
-    const blink = Math.floor(elapsed * 6) % 2 === 1;
-    for (const craft of world.crafts) {
-      const marker = mapMarkers[craft.kind];
-      if (craft.cloak <= 0 || blink)
-        dot(craft.x, craft.z, marker.color, marker.size);
-    }
-  };
-
-  const updateHud = () => {
-    setText(playerPips, pips(world.captured("player")));
-    setText(rivalPips, pips(world.captured("rival")));
-    setText(clock, clockText(world.time));
-    for (const { element, item } of itemCounts)
-      setText(element, `×${world.inventory[item]}`);
+  const showOverlay = () => {
     if (shownState === world.state) return;
     shownState = world.state;
     root.dataset.state = world.state;
-    if (world.state === "playing") {
-      overlay.hidden = true;
-      return;
-    }
-    const copy = overlays[world.state];
-    overlay.hidden = false;
+    const copy = overlayFor(world, best);
+    overlay.hidden = copy === null;
+    if (!copy) return;
     heading.textContent = copy.heading;
-    message.textContent =
-      world.state === "won"
-        ? `Score ${world.score()} · ${clockText(world.time)}`
-        : copy.body;
+    message.textContent = copy.body;
     action.textContent = copy.action;
+  };
+
+  const updateHud = () => {
+    hud.update(world, elapsed, view?.mirrorBox() ?? null);
+    showOverlay();
+  };
+
+  const drainEvents = () => {
+    for (const event of world.events.splice(0)) {
+      hud.announce(event, elapsed);
+      sound.play(event);
+    }
+    if (world.state === "lost" && world.score > best) {
+      best = world.score;
+      saveBest(best);
+    }
   };
 
   const present = (dt: number) => {
@@ -232,16 +155,11 @@ export function createHoverFixture(
 
   const paint = () => {
     updateHud();
-    drawMap();
+    hud.drawMap(world, elapsed);
     if (!view || !supported) return;
-    if (running) {
-      view.acquire();
-      present(0);
-      return;
-    }
     view.acquire();
     present(0);
-    view.release();
+    if (!running) view.release();
   };
 
   function stopLoop() {
@@ -250,13 +168,7 @@ export function createHoverFixture(
     previous = 0;
   }
 
-  const frame = (timestamp: number) => {
-    animationFrame = 0;
-    if (!running || !supported || world.state !== "playing") return;
-    const dt = previous
-      ? Math.min(0.05, Math.max(0, (timestamp - previous) / 1000))
-      : 0;
-    previous = timestamp;
+  const advance = (dt: number) => {
     accumulator = Math.min(accumulator + dt, step * 4);
     while (accumulator >= step) {
       world.step(step, controls);
@@ -264,11 +176,22 @@ export function createHoverFixture(
     }
     elapsed += dt;
     mapAge += dt;
+  };
+
+  const frame = (timestamp: number) => {
+    animationFrame = 0;
+    if (!running || !supported || world.state !== "playing") return;
+    const dt = previous
+      ? Math.min(0.05, Math.max(0, (timestamp - previous) / 1000))
+      : 0;
+    previous = timestamp;
+    advance(dt);
+    drainEvents();
     present(dt);
     updateHud();
     if (mapAge >= 0.1) {
       mapAge = 0;
-      drawMap();
+      hud.drawMap(world, elapsed);
     }
     if (world.state === "playing")
       animationFrame = requestAnimationFrame(frame);
@@ -280,6 +203,11 @@ export function createHoverFixture(
       animationFrame = requestAnimationFrame(frame);
   };
 
+  const startWorld = (next: HoverWorld) => {
+    world = next;
+    initialize();
+  };
+
   const play = () => {
     if (!supported) return;
     // A start pressed while the host holds the game takes effect when the
@@ -288,16 +216,12 @@ export function createHoverFixture(
       startRequested = performance.now();
       return;
     }
-    if (world.state === "won" || world.state === "lost") {
-      world = new HoverWorld();
-      view?.dispose();
-      view = null;
-      initialize();
-    }
-    if (world.state === "ready" || world.state === "paused") {
-      world.state = "playing";
-      if (shownState === "ready") view?.snapCamera();
-    }
+    sound.unlock();
+    if (world.state === "cleared")
+      startWorld(new HoverWorld(world.round + 1, world.score));
+    else if (world.state === "lost") startWorld(new HoverWorld(firstRound));
+    world.state = "playing";
+    view?.snapCamera();
     root.focus({ preventScroll: true });
     updateHud();
     loop();
@@ -317,7 +241,7 @@ export function createHoverFixture(
     error.hidden = true;
     supported = true;
     try {
-      view = createHoverRenderer(world, viewport, root, () => {
+      view = createHoverRenderer(world, viewport, () => {
         contextLosses += 1;
         fail("Graphics context lost. Retry to keep playing.");
       });
@@ -353,6 +277,7 @@ export function createHoverFixture(
     Enter: toggle,
     p: toggle,
     Escape: hold,
+    m: () => sound.toggleMute(),
   };
   const steer = (key: string, down: boolean, event: KeyboardEvent) => {
     const control = driveKeys[key] ?? itemKeys[key];
@@ -368,16 +293,14 @@ export function createHoverFixture(
     return !active || active === document.body || root.contains(active);
   };
   const keyDown = (event: KeyboardEvent) => {
-    if (!ours()) return;
-    const key = keyName(event);
+    const key = ours() ? keyName(event) : null;
     if (key === null) return;
     const command = commands[key];
     if (command) command(event);
     else steer(key, true, event);
   };
   const keyUp = (event: KeyboardEvent) => {
-    if (!ours()) return;
-    const key = keyName(event);
+    const key = ours() ? keyName(event) : null;
     if (key !== null) steer(key, false, event);
   };
   const clearControls = (event: FocusEvent) => {
@@ -392,10 +315,8 @@ export function createHoverFixture(
     if (!button) return;
     event.preventDefault();
     const down = event.type === "pointerdown";
-    if (down) {
-      button.setPointerCapture(event.pointerId);
-      if (world.state !== "playing") play();
-    }
+    if (down && event.isTrusted) button.setPointerCapture(event.pointerId);
+    if (down && world.state !== "playing") play();
     setControl(button.dataset.control as keyof Controls, down);
   };
   const touchPad = root.querySelector<HTMLElement>(".hover-touch")!;
@@ -419,13 +340,20 @@ export function createHoverFixture(
   document.addEventListener("visibilitychange", visibility);
   resizeObserver.observe(viewport);
   running = options.autoStart !== false;
-  drawMapBase();
   initialize();
-  const removeTheme = observeFixtureTheme(() => {
-    view?.applyTheme();
-    drawMapBase();
+  const removeTheme = observeFixtureTheme(paint);
+
+  const resumeHost = () => {
+    running = true;
+    if (!supported) return;
+    view?.acquire();
+    view?.resize(viewport.clientWidth, viewport.clientHeight);
     paint();
-  });
+    loop();
+    if (performance.now() - startRequested >= 3000) return;
+    startRequested = -Infinity;
+    play();
+  };
 
   const handle = createFixtureLifecycle({
     fixtureId: "hover",
@@ -435,20 +363,9 @@ export function createHoverFixture(
       stopLoop();
       view?.release();
     },
-    resume() {
-      running = true;
-      if (!supported) return;
-      view?.acquire();
-      view?.resize(viewport.clientWidth, viewport.clientHeight);
-      paint();
-      loop();
-      if (performance.now() - startRequested < 3000) {
-        startRequested = -Infinity;
-        play();
-      }
-    },
+    resume: resumeHost,
     reset() {
-      world = new HoverWorld();
+      world = new HoverWorld(firstRound);
       controls = emptyControls();
       elapsed = 0;
       frames = 0;
@@ -462,6 +379,7 @@ export function createHoverFixture(
       document.removeEventListener("visibilitychange", visibility);
       document.removeEventListener("keydown", keyDown);
       document.removeEventListener("keyup", keyUp);
+      sound.close();
       view?.dispose();
       view = null;
       container.replaceChildren();
@@ -480,12 +398,15 @@ export function createHoverFixture(
         },
         details: {
           state: world.state,
+          round: world.round,
+          maze: world.arena.maze.name,
           time: world.time,
           x: player.x,
+          y: player.y,
           z: player.z,
           heading: player.heading,
           speed: Math.hypot(player.vx, player.vz),
-          score: world.score(),
+          score: world.score,
           rendering: view?.active ?? false,
         },
         supported,

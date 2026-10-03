@@ -1,0 +1,224 @@
+import { fixtureColor } from "../shared/theme";
+import { cellSize, type GameState, type HoverWorld } from "./hover-world";
+
+const mapScale = 5;
+const team = { blue: "#2f6de0", red: "#d8342c", green: "#3fae4a" };
+
+const banners: Record<string, string> = {
+  "pod:spring": "Spring",
+  "pod:barrier": "Wall",
+  "pod:cloak": "Cloak",
+  "pod:green": "Green light! Speed up",
+  "pod:red": "Red light! Slowed",
+  "pod:shield": "Shield",
+  "pod:eraser": "Map erased",
+  "pod:calm": "Drones slowed",
+  "pod:thief": "A flag was stolen back",
+  "pod:blocked": "Shield blocked it",
+  "flag:blue": "Flag!",
+  "flag:red": "They took a flag",
+  "trap:fling": "Whoa!",
+  "trap:hold": "Stuck!",
+  spotted: "Spotted!",
+};
+
+const pips = (count: number, total: number) =>
+  "●".repeat(count) + "○".repeat(Math.max(0, total - count));
+
+const clockText = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+
+export const hudMarkup = `<div class="hover-hud" aria-hidden="true">
+    <div class="hover-flags">
+      <span class="hover-label">Blue</span><span class="hover-pips" data-team="blue"></span>
+      <span class="hover-label">Red</span><span class="hover-pips" data-team="red"></span>
+    </div>
+    <div class="hover-mirror" hidden></div>
+    <div class="hover-score"><span class="hover-label">Round <b data-round></b></span><output data-score></output><span data-clock></span></div>
+    <div class="hover-items">
+      <span><kbd>A</kbd>Spring <b data-item="spring"></b></span>
+      <span><kbd>S</kbd>Wall <b data-item="barrier"></b></span>
+      <span><kbd>D</kbd>Cloak <b data-item="cloak"></b></span>
+    </div>
+    <canvas class="hover-map"></canvas>
+    <div class="hover-gauges"><div class="hover-speed"><i></i></div><span data-effects></span></div>
+    <p class="hover-banner" hidden></p>
+  </div>`;
+
+interface Overlay {
+  action: string;
+  body: string;
+  heading: string;
+}
+
+export function overlayFor(world: HoverWorld, best: number): Overlay | null {
+  const maze = world.arena.maze.look.label;
+  const goal = `Collect ${world.flagCount} blue flags before the blue drones take your ${world.flagCount} red ones. Green hunters ram you.`;
+  const copy: Record<Exclude<GameState, "playing">, Overlay> = {
+    ready: {
+      heading: "HOVER!",
+      body: `Round ${world.round + 1} · ${maze}. ${goal}`,
+      action: "Start",
+    },
+    paused: { heading: "Paused", body: "", action: "Resume" },
+    cleared: {
+      heading: `Round ${world.round + 1} cleared`,
+      body: `Score ${world.score} · ${clockText(world.time)}`,
+      action: "Next round",
+    },
+    lost: {
+      heading: "Game over",
+      body: `The drones took your flags. Score ${world.score}${best > 0 ? ` · best ${best}` : ""}`,
+      action: "Play again",
+    },
+  };
+  return world.state === "playing" ? null : copy[world.state];
+}
+
+/** The Hover!-style heads-up display: flags, mirror, score, items, radar. */
+export function createHud(root: HTMLElement) {
+  const find = <T extends HTMLElement>(selector: string) =>
+    root.querySelector<T>(selector)!;
+  const map = find<HTMLCanvasElement>(".hover-map");
+  const mapContext = map.getContext("2d")!;
+  const mirror = find<HTMLElement>(".hover-mirror");
+  const banner = find<HTMLElement>(".hover-banner");
+  const speed = find<HTMLElement>(".hover-speed i");
+  const fields = {
+    blue: find(".hover-pips[data-team=blue]"),
+    red: find(".hover-pips[data-team=red]"),
+    round: find("[data-round]"),
+    score: find("[data-score]"),
+    clock: find("[data-clock]"),
+    effects: find("[data-effects]"),
+  };
+  const items = [...root.querySelectorAll<HTMLElement>("[data-item]")].map(
+    (element) => ({
+      element,
+      item: element.dataset.item as keyof HoverWorld["inventory"],
+    }),
+  );
+  const shown = new Map<HTMLElement, string>();
+  const setText = (element: HTMLElement, text: string) => {
+    if (shown.get(element) === text) return;
+    shown.set(element, text);
+    element.textContent = text;
+  };
+  let bannerTime = 0;
+
+  const effects = (world: HoverWorld) => {
+    const player = world.player;
+    const active: [string, number][] = [
+      ["Boost", player.boost],
+      ["Slow", player.slow],
+      ["Shield", player.shield],
+      ["Cloak", player.cloak],
+      ["Calm", world.calm],
+      ["Stuck", player.held],
+    ];
+    return active
+      .filter(([, time]) => time > 0)
+      .map(([name, time]) => `${name} ${Math.ceil(time)}`)
+      .join(" · ");
+  };
+
+  // Hover!'s radar shows only what the player has explored.
+  const drawTiles = (world: HoverWorld) => {
+    const { arena } = world;
+    if (map.width !== arena.width * mapScale) {
+      map.width = arena.width * mapScale;
+      map.height = arena.depth * mapScale;
+    }
+    mapContext.fillStyle = fixtureColor(root, "surface-sunken");
+    mapContext.fillRect(0, 0, map.width, map.height);
+    const colors: Record<string, string> = {
+      "#": fixtureColor(root, "text-subtle"),
+      "=": fixtureColor(root, "border"),
+    };
+    for (let index = 0; index < world.explored.length; index++) {
+      const { column, row } = arena.cellOf(index);
+      const color = world.explored[index]
+        ? colors[arena.tile(column, row)]
+        : undefined;
+      if (!color) continue;
+      mapContext.fillStyle = color;
+      mapContext.fillRect(
+        column * mapScale,
+        row * mapScale,
+        mapScale,
+        mapScale,
+      );
+    }
+  };
+
+  const drawMarkers = (world: HoverWorld, clock: number) => {
+    const { arena } = world;
+    const scale = mapScale / cellSize;
+    const dot = (x: number, z: number, color: string, size: number) => {
+      const cell = arena.cellAt(x, z);
+      if (!world.explored[arena.index(cell.column, cell.row)]) return;
+      mapContext.fillStyle = color;
+      mapContext.fillRect(
+        x * scale - size / 2,
+        z * scale - size / 2,
+        size,
+        size,
+      );
+    };
+    for (const flag of world.flags)
+      if (!flag.taken) dot(flag.x, flag.z, team[flag.owner], 4);
+    for (const craft of world.crafts.slice(1))
+      dot(
+        craft.x,
+        craft.z,
+        craft.kind === "seeker" ? team.blue : team.green,
+        3,
+      );
+    const player = world.player;
+    if (player.cloak <= 0 || Math.floor(clock * 6) % 2)
+      dot(player.x, player.z, "#ffffff", 5);
+  };
+
+  const drawMap = (world: HoverWorld, clock: number) => {
+    drawTiles(world);
+    drawMarkers(world, clock);
+  };
+
+  return {
+    update(world: HoverWorld, clock: number, mirrorBox: Box | null) {
+      setText(fields.blue, pips(world.captured("player"), world.flagCount));
+      setText(fields.red, pips(world.captured("rival"), world.flagCount));
+      setText(fields.round, String(world.round + 1));
+      setText(fields.score, String(world.score).padStart(5, "0"));
+      setText(fields.clock, clockText(world.time));
+      setText(fields.effects, effects(world));
+      for (const { element, item } of items)
+        setText(element, `×${world.inventory[item]}`);
+      const player = world.player;
+      speed.style.transform = `scaleX(${Math.min(1, Math.hypot(player.vx, player.vz) / 25)})`;
+      if (bannerTime && clock > bannerTime) {
+        banner.hidden = true;
+        bannerTime = 0;
+      }
+      mirror.hidden = mirrorBox === null;
+      if (mirrorBox)
+        mirror.style.cssText = `left:${mirrorBox.left}px;top:${mirrorBox.top}px;width:${mirrorBox.width}px;height:${mirrorBox.height}px`;
+    },
+    drawMap,
+    announce(event: string, clock: number) {
+      const text = banners[event];
+      if (!text) return;
+      banner.textContent = text;
+      banner.dataset.tone = event.split(":")[0];
+      banner.hidden = false;
+      bannerTime = clock + 1.3;
+    },
+  };
+}
+
+interface Box {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}

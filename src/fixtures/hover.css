@@ -31,9 +31,10 @@
   color: var(--lab-text);
   font-size: var(--lab-font-size-small);
 }
+.hover-flags,
 .hover-score,
-.hover-clock,
-.hover-items {
+.hover-items,
+.hover-gauges {
   position: absolute;
   display: flex;
   align-items: center;
@@ -43,7 +44,7 @@
   border-radius: var(--lab-radius);
   background: color-mix(in srgb, var(--lab-page) 78%, transparent);
 }
-.hover-score {
+.hover-flags {
   top: 10px;
   left: 10px;
 }
@@ -53,22 +54,45 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.hover-label b {
+  color: var(--lab-text-strong);
+}
 .hover-pips {
   font-family: var(--lab-font-mono);
   letter-spacing: 0.12em;
 }
-.hover-pips[data-team="player"] {
-  color: var(--lab-accent-alt);
+.hover-pips[data-team="blue"] {
+  color: #4f8bff;
 }
-.hover-pips[data-team="rival"] {
-  color: var(--lab-accent);
+.hover-pips[data-team="red"] {
+  color: #ff4a3d;
 }
-.hover-clock {
+.hover-score {
   top: 10px;
   right: 10px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.hover-score output {
   color: var(--lab-text-strong);
   font-family: var(--lab-font-mono);
+  font-size: var(--lab-font-size-heading);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.hover-score span:last-child {
+  color: var(--lab-text-muted);
+  font-family: var(--lab-font-mono);
+  font-size: var(--lab-font-size-label);
+}
+.hover-mirror {
+  position: absolute;
+  border: 3px solid #1c1c1c;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px var(--lab-border),
+    0 4px 10px rgb(0 0 0 / 0.4);
 }
 .hover-items {
   bottom: 10px;
@@ -81,10 +105,38 @@
   align-items: center;
   gap: 5px;
 }
-.hover-items b {
+.hover-items b,
+.hover-gauges span {
   color: var(--lab-positive);
   font-family: var(--lab-font-mono);
   font-weight: var(--lab-font-weight);
+}
+.hover-gauges {
+  right: 10px;
+  bottom: 10px;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 96px;
+}
+.hover-gauges span {
+  font-size: var(--lab-font-size-tiny);
+}
+.hover-gauges span:empty {
+  display: none;
+}
+.hover-speed {
+  width: 96px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--lab-surface-sunken);
+}
+.hover-speed i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #3bff6a, #ffd23a, #ff3b3b);
+  transform: scaleX(0);
+  transform-origin: left;
 }
 .hover kbd {
   min-width: 1.5em;
@@ -98,14 +150,36 @@
 }
 .hover-map {
   position: absolute;
-  right: 10px;
   bottom: 10px;
-  width: 105px;
-  height: 105px;
+  left: 50%;
+  width: 110px;
+  height: 110px;
   border: 1px solid var(--lab-border);
-  border-radius: var(--lab-radius);
+  border-radius: 50%;
   image-rendering: pixelated;
   opacity: 0.92;
+  transform: translateX(-50%);
+}
+.hover-banner {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  margin: 0;
+  padding: 4px 14px;
+  border-radius: var(--lab-radius);
+  color: var(--lab-text-strong);
+  background: color-mix(in srgb, var(--lab-page) 70%, transparent);
+  font-size: calc(var(--lab-font-size-heading) * 0.9);
+  font-weight: var(--lab-font-weight-heading);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.hover-banner[hidden] {
+  display: none;
+}
+.hover-banner[data-tone="spotted"],
+.hover-banner[data-tone="trap"] {
+  color: #ffd23a;
 }
 .hover-overlay {
   position: absolute;
@@ -179,8 +253,24 @@
     display: none;
   }
   .hover-map {
+    right: 10px;
+    left: auto;
     width: 84px;
     height: 84px;
+    transform: none;
+  }
+  .hover-gauges {
+    top: 76px;
+    right: 10px;
+    bottom: auto;
+    min-width: 0;
+    padding: 4px 8px;
+  }
+  .hover-speed {
+    display: none;
+  }
+  .hover-gauges:has(span:empty) {
+    display: none;
   }
   .hover-touch {
     position: absolute;

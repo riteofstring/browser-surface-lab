@@ -28,14 +28,23 @@ demos. They are not part of the Tier 1 manifest. They use procedural geometry
 and shaders with no remote assets, cap the drawing-buffer pixel ratio at 1.5,
 release their WebGL context while paused, and share one renderer per document.
 
-`hover` is a playable Three.js take on Microsoft's 1995 _Hover!_: capture three
-flags in the rival's colour in a walled arena before the rival hovercraft takes
-yours, with bumper bots in the way, jump, wall and cloak pods, and speed and
-slow pads. Arrow keys drive; A or Space jumps, S drops a wall behind you, D
-cloaks, and Enter or P pauses. Coarse pointers get on-screen buttons. It renders
-only while a game is in play, caps the pixel ratio at 1.5, and when paused by
-its host keeps a still of the last frame and releases its WebGL context. Like
-the other Three.js demos it is outside the Tier 1 manifest.
+`hover` is a playable Three.js take on Microsoft's 1995 _Hover!_, following
+its rules. You drive the red bumper car and collect the blue flags before the
+blue drones collect your red ones; green hunters ping when they spot you and
+ram you. Rounds cycle through three two-tier mazes after the original castle,
+futuristic city and sewer, with 3 flags each at first and up to 6 and more
+drones later. Pods give a spring, wall or cloak to keep (A or Space, S, D),
+or act at once: green light (faster), red light (slower), shield (blocks bad
+pods, traps and knocks), map eraser, slower drones, flag thief and random.
+Green floor traps fling you; red ones hold you for three seconds. The HUD
+follows the original: flags, rear-view mirror, score, items, a radar that
+reveals only explored ground, and speed. `maze=castle|city|sewer` picks the
+first maze, like the original's Maze Type option, and M mutes the synthesised
+sounds. The mazes and textures are new and procedural, not the original's.
+The world keeps Hover!'s own colours; the theme styles the HUD and its fonts.
+It renders only while a game is in play, caps the pixel ratio at 1.5, and when
+paused by its host keeps a still of the last frame and releases its WebGL
+context. Like the other Three.js demos it is outside the Tier 1 manifest.
 
 ## Pages
 
