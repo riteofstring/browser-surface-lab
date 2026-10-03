@@ -134,6 +134,7 @@ export function createHoverFixture(
   let controls = emptyControls();
   let view: HoverRenderer | null = null;
   let running = false;
+  let startRequested = -Infinity;
   let supported = true;
   let animationFrame = 0;
   let previous = 0;
@@ -281,6 +282,12 @@ export function createHoverFixture(
 
   const play = () => {
     if (!supported) return;
+    // A start pressed while the host holds the game takes effect when the
+    // host resumes it, as when a click both chooses the pane and plays.
+    if (!running) {
+      startRequested = performance.now();
+      return;
+    }
     if (world.state === "won" || world.state === "lost") {
       world = new HoverWorld();
       view?.dispose();
@@ -354,7 +361,14 @@ export function createHoverFixture(
     if (down && world.state !== "playing" && driveKeys[key]) play();
     setControl(control, down);
   };
+  // Keys reach the game whenever nothing else in its document has focus, so
+  // a host that focuses the frame can hand over the keyboard.
+  const ours = () => {
+    const active = document.activeElement;
+    return !active || active === document.body || root.contains(active);
+  };
   const keyDown = (event: KeyboardEvent) => {
+    if (!ours()) return;
     const key = keyName(event);
     if (key === null) return;
     const command = commands[key];
@@ -362,6 +376,7 @@ export function createHoverFixture(
     else steer(key, true, event);
   };
   const keyUp = (event: KeyboardEvent) => {
+    if (!ours()) return;
     const key = keyName(event);
     if (key !== null) steer(key, false, event);
   };
@@ -392,8 +407,8 @@ export function createHoverFixture(
     if (!animationFrame) paint();
   });
 
-  root.addEventListener("keydown", keyDown);
-  root.addEventListener("keyup", keyUp);
+  document.addEventListener("keydown", keyDown);
+  document.addEventListener("keyup", keyUp);
   root.addEventListener("focusout", clearControls);
   viewport.addEventListener("pointerdown", pointerFocus);
   touchPad.addEventListener("pointerdown", touch);
@@ -427,6 +442,10 @@ export function createHoverFixture(
       view?.resize(viewport.clientWidth, viewport.clientHeight);
       paint();
       loop();
+      if (performance.now() - startRequested < 3000) {
+        startRequested = -Infinity;
+        play();
+      }
     },
     reset() {
       world = new HoverWorld();
@@ -441,6 +460,8 @@ export function createHoverFixture(
       removeTheme();
       resizeObserver.disconnect();
       document.removeEventListener("visibilitychange", visibility);
+      document.removeEventListener("keydown", keyDown);
+      document.removeEventListener("keyup", keyUp);
       view?.dispose();
       view = null;
       container.replaceChildren();

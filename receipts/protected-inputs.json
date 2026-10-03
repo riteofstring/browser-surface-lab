@@ -1,5 +1,5 @@
 {
-  "aggregate": "cee921c0e690ae0fb7666c7b1da305d516608c0f9f9f7e0bd61e5a5eeb246ec8",
+  "aggregate": "7df863e36c78f90b4cbb175d271e4c390c641ce844c1455847ec8d325b33afe3",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -173,8 +173,8 @@
     },
     {
       "path": "src/fixtures/hover.ts",
-      "sha256": "6059422d2e9c56df99e5b18218ccf05dc518d53af2162cd9ed07dbfa5517064d",
-      "size": 15018
+      "sha256": "bd80dc6104d682a384e82edd5d3e4edd91f9d07bdef86b5a515d785cf28137a4",
+      "size": 15847
     },
     {
       "path": "src/fixtures/lifecycle.ts",
