@@ -13,7 +13,10 @@ const mixedFactories = [
   createXtermDomFixture,
 ] as const;
 
-export const createMixedFixture: FixtureFactory = async (root, options = {}) => {
+export const createMixedFixture: FixtureFactory = async (
+  root,
+  options = {},
+) => {
   root.className = "surface surface--mixed";
   const grid = document.createElement("div");
   grid.className = "mixed-grid";
@@ -54,7 +57,8 @@ export const createMixedFixture: FixtureFactory = async (root, options = {}) => 
       return {
         checksum: fixtureSnapshotChecksum(snapshots),
         counters: {
-          activeChildren: snapshots.filter((snapshot) => snapshot.running).length,
+          activeChildren: snapshots.filter((snapshot) => snapshot.running)
+            .length,
           childFrames: snapshots.reduce(
             (total, snapshot) => total + (snapshot.counters.frames ?? 0),
             0,

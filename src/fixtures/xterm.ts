@@ -53,8 +53,12 @@ function createTerminalFixture(
     });
     terminal.open(terminalRoot);
     const removeTheme = observeFixtureTheme(() => {
-      const styles = getComputedStyle(root.isConnected ? root : root.ownerDocument.documentElement);
-      terminal.options.fontFamily = styles.getPropertyValue("--lab-font-mono").trim();
+      const styles = getComputedStyle(
+        root.isConnected ? root : root.ownerDocument.documentElement,
+      );
+      terminal.options.fontFamily = styles
+        .getPropertyValue("--lab-font-mono")
+        .trim();
       terminal.options.fontSize = Number.parseFloat(styles.fontSize);
       terminal.options.theme = {
         background: fixtureColor(root, "surface"),
@@ -74,11 +78,15 @@ function createTerminalFixture(
         terminal.loadAddon(webglAddon);
       } catch (error) {
         rendererAvailable = false;
-        label.querySelector("strong")?.replaceChildren(
-          document.createTextNode(
-            error instanceof Error ? error.message : "WebGL renderer unavailable",
-          ),
-        );
+        label
+          .querySelector("strong")
+          ?.replaceChildren(
+            document.createTextNode(
+              error instanceof Error
+                ? error.message
+                : "WebGL renderer unavailable",
+            ),
+          );
       }
     }
 
@@ -93,7 +101,10 @@ function createTerminalFixture(
 
     const writeLine = (): void => {
       const source = sourceLines[linesWritten % sourceLines.length];
-      const severity = linesWritten % 9 === 0 ? "\u001b[38;5;214mWARN\u001b[0m" : "\u001b[38;5;81mINFO\u001b[0m";
+      const severity =
+        linesWritten % 9 === 0
+          ? "\u001b[38;5;214mWARN\u001b[0m"
+          : "\u001b[38;5;81mINFO\u001b[0m";
       const line = `${severity} ${String(linesWritten).padStart(5, "0")} ${source} · ${(linesWritten * 37) % 997}\r\n`;
       terminal.write(line);
       bytesConsumed += new TextEncoder().encode(line).byteLength;
@@ -154,8 +165,7 @@ function createTerminalFixture(
             renderer: useWebgl ? "webgl" : "dom",
             rows: terminal.rows,
           },
-          supported:
-            !useWebgl || (rendererAvailable && contextLosses === 0),
+          supported: !useWebgl || (rendererAvailable && contextLosses === 0),
         };
       },
     });

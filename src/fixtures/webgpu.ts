@@ -131,12 +131,8 @@ export const createWebgpuFixture: FixtureFactory = async (
         },
       });
       const vertices = new Float32Array([
-        -0.62, -0.62, 0, 1,
-        0.62, -0.62, 1, 1,
-        -0.62, 0.62, 0, 0,
-        -0.62, 0.62, 0, 0,
-        0.62, -0.62, 1, 1,
-        0.62, 0.62, 1, 0,
+        -0.62, -0.62, 0, 1, 0.62, -0.62, 1, 1, -0.62, 0.62, 0, 0, -0.62, 0.62,
+        0, 0, 0.62, -0.62, 1, 1, 0.62, 0.62, 1, 0,
       ]);
       const vertexBuffer = device.createBuffer({
         mappedAtCreation: true,
@@ -152,8 +148,7 @@ export const createWebgpuFixture: FixtureFactory = async (
       const texture = device.createTexture({
         format: "rgba8unorm",
         size: [workload.textureSize, workload.textureSize],
-        usage:
-          gpuTextureUsage.copyDestination | gpuTextureUsage.textureBinding,
+        usage: gpuTextureUsage.copyDestination | gpuTextureUsage.textureBinding,
       });
       device.queue.writeTexture(
         { texture },
@@ -219,11 +214,13 @@ export const createWebgpuFixture: FixtureFactory = async (
       });
     } catch (error) {
       supported = false;
-      label.querySelector("strong")?.replaceChildren(
-        document.createTextNode(
-          error instanceof Error ? error.message : "WebGPU setup failed",
-        ),
-      );
+      label
+        .querySelector("strong")
+        ?.replaceChildren(
+          document.createTextNode(
+            error instanceof Error ? error.message : "WebGPU setup failed",
+          ),
+        );
     }
   }
 

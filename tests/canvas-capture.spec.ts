@@ -171,11 +171,9 @@ for (const dpr of [1, 2]) {
                 ),
               ),
           );
-          const native = await page
-            .locator("#capture-content")
-            .screenshot({
-              path: info.outputPath(`native-${width}-${height}.png`),
-            });
+          const native = await page.locator("#capture-content").screenshot({
+            path: info.outputPath(`native-${width}-${height}.png`),
+          });
           const captured = await capturePixels(page);
           const difference = await page.evaluate(
             async ({ native, captured, dpr }) => {

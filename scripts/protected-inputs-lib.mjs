@@ -1,14 +1,11 @@
-import {
-  existsSync,
-  readdirSync,
-  readFileSync,
-  statSync,
-} from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
 
 import { sha256File, sha256Text } from "./hash-lib.mjs";
 
 const excludedTopLevelNames = new Set([
+  ".code-polishy-artifacts",
+  ".code-polishy-reports",
   ".git",
   "dist",
   "node_modules",

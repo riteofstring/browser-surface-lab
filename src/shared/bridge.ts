@@ -37,11 +37,27 @@ export function installFixtureBridge(handle: FixtureHandle): () => void {
   };
 
   const onMessage = (event: MessageEvent<unknown>): void => {
-    const value = event.data as { protocol?: unknown; command?: unknown; theme?: unknown; requestId?: unknown } | null;
-    if (event.source === window.parent && value?.protocol === protocol && value.command === "theme") {
-      if (isFixtureTheme(value.theme) && typeof value.requestId === "string" && value.requestId.length <= 128) {
+    const value = event.data as {
+      protocol?: unknown;
+      command?: unknown;
+      theme?: unknown;
+      requestId?: unknown;
+    } | null;
+    if (
+      event.source === window.parent &&
+      value?.protocol === protocol &&
+      value.command === "theme"
+    ) {
+      if (
+        isFixtureTheme(value.theme) &&
+        typeof value.requestId === "string" &&
+        value.requestId.length <= 128
+      ) {
         applyFixtureTheme(value.theme);
-        window.parent.postMessage({ protocol, type: "theme-applied", requestId: value.requestId }, event.origin);
+        window.parent.postMessage(
+          { protocol, type: "theme-applied", requestId: value.requestId },
+          event.origin,
+        );
       }
       return;
     }

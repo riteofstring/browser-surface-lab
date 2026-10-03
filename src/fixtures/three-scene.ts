@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { fixtureColor, observeFixtureTheme } from "../shared/theme";
 
-export type SceneKind = "reactor" | "tidal";
+type SceneKind = "reactor" | "tidal";
 
 let sharedRenderer: THREE.WebGLRenderer | null = null;
 const rendererClients = new Set<(message: string) => void>();

@@ -1,11 +1,11 @@
-export interface FixtureFont {
+interface FixtureFont {
   family: string;
   source: string;
   style?: "italic" | "normal";
   weight?: string;
 }
 
-export interface FixtureTheme {
+interface FixtureTheme {
   colorMode: "dark" | "light";
   fonts?: FixtureFont[];
   styles?: Partial<Record<FixtureStyleName, string>>;
@@ -44,7 +44,7 @@ const textStyles = [
   ...lineStyles,
   "radius",
 ] as const;
-export type FixtureStyleName =
+type FixtureStyleName =
   (typeof colorStyles)[number] | (typeof textStyles)[number];
 
 function styleProperty(name: string): string | null {

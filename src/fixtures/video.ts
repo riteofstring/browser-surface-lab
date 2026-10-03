@@ -35,8 +35,7 @@ export const createVideoFixture: FixtureFactory = (root, options = {}) => {
     callbackHandle = video.requestVideoFrameCallback((_now, metadata) => {
       callbackHandle = null;
       decodedFrames = Math.max(decodedFrames, metadata.presentedFrames);
-      checksum =
-        (checksum * 33 + Math.round(metadata.mediaTime * 1000)) >>> 0;
+      checksum = (checksum * 33 + Math.round(metadata.mediaTime * 1000)) >>> 0;
       if (!video.paused) {
         scheduleFrame();
       }

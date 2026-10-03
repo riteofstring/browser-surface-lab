@@ -21,7 +21,7 @@ export type FixtureId =
 
 export type WorkloadCommand = "pause" | "reset" | "resume" | "start";
 
-export type FixtureDetail = boolean | number | string | null;
+type FixtureDetail = boolean | number | string | null;
 
 export interface FixtureSnapshot {
   checksum: number;

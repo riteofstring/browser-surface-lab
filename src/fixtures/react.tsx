@@ -62,7 +62,10 @@ function ReactWorkload({ epoch, onCommit, running }: ReactWorkloadProps) {
   );
 }
 
-export const createReactFixture: FixtureFactory = (rootElement, options = {}) => {
+export const createReactFixture: FixtureFactory = (
+  rootElement,
+  options = {},
+) => {
   rootElement.className = "surface surface--react";
   const reactRoot: Root = createRoot(rootElement);
   let checksum = workload.cellCount;
