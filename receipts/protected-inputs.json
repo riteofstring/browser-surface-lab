@@ -1,5 +1,5 @@
 {
-  "aggregate": "2e81a6984330462865c6213b9ce8257e9edea3fd0ccf5672e4c87ac1b640e13f",
+  "aggregate": "2fb663a50c0166fe913a17b454fa087203e59212a9a2dc9b39a9df263d508819",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -263,8 +263,8 @@
     },
     {
       "path": "src/shared/bridge.ts",
-      "sha256": "23b5d472a365dfd3bd97ce271b7f9fbb73e9b84f21ade7e3c65b33d24f53aef1",
-      "size": 4472
+      "sha256": "1e8f3e2ba17ea28f4d3babee155ed0687f612fc555d67e2cd50ea85d530d18a7",
+      "size": 4581
     },
     {
       "path": "src/shared/theme.ts",

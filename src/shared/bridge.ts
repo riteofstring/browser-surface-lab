@@ -63,6 +63,29 @@ function replayHostKey(value: unknown): boolean {
   return true;
 }
 
+/** A theme message from the embedding parent, acknowledged once applied. */
+function applyHostTheme(event: MessageEvent<unknown>): boolean {
+  const value = event.data as {
+    protocol?: unknown;
+    command?: unknown;
+    theme?: unknown;
+    requestId?: unknown;
+  } | null;
+  if (value?.protocol !== protocol || value.command !== "theme") return false;
+  if (
+    isFixtureTheme(value.theme) &&
+    typeof value.requestId === "string" &&
+    value.requestId.length <= 128
+  ) {
+    applyFixtureTheme(value.theme);
+    window.parent.postMessage(
+      { protocol, type: "theme-applied", requestId: value.requestId },
+      event.origin,
+    );
+  }
+  return true;
+}
+
 export function installFixtureBridge(handle: FixtureHandle): () => void {
   const command = async (nextCommand: WorkloadCommand): Promise<void> => {
     await handle.command(nextCommand);
@@ -74,30 +97,7 @@ export function installFixtureBridge(handle: FixtureHandle): () => void {
 
   const onMessage = (event: MessageEvent<unknown>): void => {
     if (event.source === window.parent && replayHostKey(event.data)) return;
-    const value = event.data as {
-      protocol?: unknown;
-      command?: unknown;
-      theme?: unknown;
-      requestId?: unknown;
-    } | null;
-    if (
-      event.source === window.parent &&
-      value?.protocol === protocol &&
-      value.command === "theme"
-    ) {
-      if (
-        isFixtureTheme(value.theme) &&
-        typeof value.requestId === "string" &&
-        value.requestId.length <= 128
-      ) {
-        applyFixtureTheme(value.theme);
-        window.parent.postMessage(
-          { protocol, type: "theme-applied", requestId: value.requestId },
-          event.origin,
-        );
-      }
-      return;
-    }
+    if (event.source === window.parent && applyHostTheme(event)) return;
     if (!isCommandMessage(event.data)) {
       return;
     }
