@@ -157,10 +157,10 @@ expects this repository beside its `onirigiri` checkout and serves a Vite
 build of `fixture.html` under `/surface-lab/`. It also serves the video asset at
 `/assets/tier1-video.webm`.
 
-A host that only needs the Three.js demos can instead build a self-contained
-copy with `pnpm build:embed --outDir <dir>`. It emits `fixture.html` and its
-chunks with relative URLs and no `public/` assets, so it works from any
-same-origin subdirectory; each fixture still loads only its own chunks.
+`hover.html` is Hover! alone, with the same bridge, theme and URL parameters
+as `fixture.html?fixture=hover`. `pnpm build:hover --outDir <dir>` builds just
+that page and its chunks with relative URLs and no `public/` assets, so a host
+can copy it into any same-origin subdirectory.
 
 ## Commands
 
@@ -169,7 +169,7 @@ pnpm install --frozen-lockfile
 pnpm contract        # pinned dependencies and fixture isolation
 pnpm typecheck
 pnpm build
-pnpm build:embed     # fixture.html only, relative base, no public assets
+pnpm build:hover     # hover.html alone, relative base, no public assets
 pnpm test:browser    # Playwright with installed Chrome; serves 127.0.0.1:5185
 pnpm integrity       # compares the tree with receipts/protected-inputs.json
 pnpm freeze:inputs   # records a new protected-input baseline

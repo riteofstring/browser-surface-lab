@@ -1,10 +1,10 @@
 {
-  "aggregate": "06283bf5d73c1773c23d67b56d3b4ca3fea976a9f161e32b1517741264769428",
+  "aggregate": "6ca4625777b313e3a34f18abfe3dfe7861b27799e72a7b60b0b901e852e06d74",
   "entries": [
     {
       "path": ".code-polishy.json",
-      "sha256": "6eef55a152d669103810f4e5dd41b91fbae269afc7c1e1042957b6420ddf2ed1",
-      "size": 8160
+      "sha256": "7c1c2a42171bb0f42bc6924fc62cb53e0df2005a21ee84b2f1ee31d77905e07f",
+      "size": 8210
     },
     {
       "path": ".code-polishy.lock.json",
@@ -62,6 +62,11 @@
       "size": 607
     },
     {
+      "path": "hover.html",
+      "sha256": "8ddb8e09b0156e9d28c3368450347e1c132bf68db7a70a5044dd9cacf2e4222f",
+      "size": 590
+    },
+    {
       "path": "index.html",
       "sha256": "99ba95279aa3f92cfee3615dfdc1fa4afa4b97f9bc3919fd7f4abd13b102cf8f",
       "size": 1295
@@ -73,7 +78,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "2a872fb249efe585a92e1aef452d1ca76d181d38566e693261c0d7360251adfe",
+      "sha256": "57817e05f93f9cc017c334a34e26ab2026aeffae33a81d70f904f0ac0b935084",
       "size": 1269
     },
     {
@@ -98,8 +103,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "9e5960295549b7f411c5544e82b7d0313a260f4dd4dfd4cbc9cd0d4be0a83787",
-      "size": 9796
+      "sha256": "6774e1c07f5a9355651cd112e294ff13a024e828fefe987802d6343d9855f20c",
+      "size": 9779
     },
     {
       "path": "scripts/freeze-protected-inputs.mjs",
@@ -133,8 +138,13 @@
     },
     {
       "path": "src/fixture-entry.ts",
-      "sha256": "2f90392cbbdc663c0bfcbea5d3b4f2552be6dd44ba9b6d2daf53379df04b8db4",
-      "size": 1504
+      "sha256": "468c460839fe6a63f4ae58929ad38af6dd8fe7f7c87bfba3dbe21a466e7dba7e",
+      "size": 385
+    },
+    {
+      "path": "src/fixture-page.ts",
+      "sha256": "7d6c4381276c70c84486ae1e8aa76d1814c214d31eb8f0e5c4edba784304dbfb",
+      "size": 1625
     },
     {
       "path": "src/fixtures/canvas-2d.ts",
@@ -272,6 +282,11 @@
       "size": 1849
     },
     {
+      "path": "src/hover-entry.ts",
+      "sha256": "4a2817c11cce916914b0d86cc5b5f6f5b3bc0327f5c2712b28b733030785f74c",
+      "size": 183
+    },
+    {
       "path": "src/index-entry.ts",
       "sha256": "e1f675926cb6bfa9c39d2d2f87f0957c74aa318a09bfd67240b1b3990eab07ea",
       "size": 23
@@ -303,8 +318,8 @@
     },
     {
       "path": "tests/hover.spec.ts",
-      "sha256": "3c4389f4a5ef1962132e3dc71fba07e53b0c7c8a9eeabad12bf90d090bd002a7",
-      "size": 9623
+      "sha256": "a7710c361b0a8e1626532ece68c8016e951fac3d6dcbc14f93966a41e51f9155",
+      "size": 10209
     },
     {
       "path": "tests/theme.spec.ts",
@@ -323,18 +338,18 @@
     },
     {
       "path": "tsconfig.json",
-      "sha256": "c4c8236767b5ca5f445a5564daafedfb7098a6a0dcb67b54de9d5144e48f9a6f",
+      "sha256": "3127fc300d13a4a66491f521f26ae1acaad64ef1c17d13355153d591da580926",
       "size": 729
     },
     {
       "path": "vite.config.ts",
-      "sha256": "7bc8b26f8375db6336003ad5512e304903cf21ab038c78ea1555ced394a23d0f",
-      "size": 353
+      "sha256": "2152593462adb66fe5911fc7a772128c2abe1af790c169176825f569cc0db031",
+      "size": 397
     },
     {
-      "path": "vite.embed.config.ts",
-      "sha256": "79eb63be4a71eaaae72cb5526b7275c74272a2cfe4093a1ff7bbe753739e7e97",
-      "size": 280
+      "path": "vite.hover.config.ts",
+      "sha256": "5b39fa23be5b742a05df0176115ffd7b4915a6b4f30916028991e7ca24284940",
+      "size": 276
     },
     {
       "path": "workload-manifest.json",

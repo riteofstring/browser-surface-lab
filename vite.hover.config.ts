@@ -9,7 +9,7 @@ export default defineConfig({
   publicDir: false,
   build: {
     rollupOptions: {
-      input: { fixture: resolve(root, "fixture.html") },
+      input: { hover: resolve(root, "hover.html") },
     },
   },
 });

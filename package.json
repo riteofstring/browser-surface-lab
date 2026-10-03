@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "build:embed": "vite build --config vite.embed.config.ts",
+    "build:hover": "vite build --config vite.hover.config.ts",
     "contract": "node scripts/verify-lab-contract.mjs",
     "dev:fixtures": "vite --host 127.0.0.1 --port 5185 --strictPort",
     "freeze:inputs": "node scripts/freeze-protected-inputs.mjs",

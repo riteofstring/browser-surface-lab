@@ -9,6 +9,7 @@
     "generated": [],
     "entryPoints": [
       "src/fixture-entry.ts",
+      "src/hover-entry.ts",
       "src/gallery-entry.ts",
       "src/index-entry.ts",
       "scripts/freeze-protected-inputs.mjs",
@@ -20,7 +21,7 @@
       "tests/**",
       "playwright.config.ts",
       "vite.config.ts",
-      "vite.embed.config.ts"
+      "vite.hover.config.ts"
     ]
   },
   "quality": {
@@ -50,11 +51,12 @@
         "src/**",
         "public/**",
         "fixture.html",
+        "hover.html",
         "gallery.html",
         "index.html",
         "workload-manifest.json",
         "vite.config.ts",
-        "vite.embed.config.ts",
+        "vite.hover.config.ts",
         "playwright.config.ts",
         "tsconfig.json",
         "package.json",

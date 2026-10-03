@@ -250,3 +250,17 @@ test("a host tint colours the 3D view overlay, and none by default", async ({
   await page.goto("/fixture.html?fixture=hover&embedding=surface");
   expect(await tint(".hover-viewport", "::after")).toBe("rgba(0, 0, 0, 0)");
 });
+
+test("hover.html serves the game alone with the same bridge and options", async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await page.goto("/hover.html?embedding=surface&autostart=0&maze=city");
+  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+  const state = await snapshot(page);
+  expect(state.fixtureId).toBe("hover");
+  expect(state.running).toBe(false);
+  expect(state.details.maze).toBe("city");
+  expect(requests.some((url) => /xterm|react-dom/u.test(url))).toBe(false);
+});
