@@ -12,6 +12,8 @@ async function hold(page: Page, key: string, ms: number) {
 test("hover drives to a pod, pauses with its pixels and resumes on request", async ({
   page,
 }) => {
+  // Several software-rendered screenshots; slow on a busy machine.
+  test.setTimeout(90_000);
   await page.goto("/fixture.html?fixture=hover");
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
   const ready = await snapshot(page);
@@ -212,4 +214,39 @@ test.describe("on a touch screen", () => {
     expect((await snapshot(page)).details.state).toBe("paused");
     await expect(stick).toBeHidden();
   });
+});
+
+test("hover loaded with autostart=0 creates no graphics until resumed", async ({
+  page,
+}) => {
+  await page.goto("/fixture.html?fixture=hover&embedding=surface&autostart=0");
+  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+  await page.waitForTimeout(300);
+  const idle = await snapshot(page);
+  expect(idle.running).toBe(false);
+  expect(idle.counters.frames).toBe(0);
+  await expect(page.locator(".hover-canvas canvas")).toHaveCount(0);
+  await page.evaluate(() => window.__surfaceLab!.command("resume"));
+  await expect(page.locator(".hover-canvas canvas")).toHaveCount(1);
+  expect((await snapshot(page)).counters.frames).toBeGreaterThan(0);
+});
+
+test("a host tint colours the 3D view overlay, and none by default", async ({
+  page,
+}) => {
+  const theme = { colorMode: "dark", styles: { tint: "#8dff5a" } };
+  await page.goto(
+    `/fixture.html?fixture=hover&embedding=surface&theme=${encodeURIComponent(JSON.stringify(theme))}`,
+  );
+  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+  const tint = (selector: string, pseudo: string | null) =>
+    page
+      .locator(selector)
+      .evaluate(
+        (element, pseudo) => getComputedStyle(element, pseudo).backgroundColor,
+        pseudo,
+      );
+  expect(await tint(".hover-viewport", "::after")).toBe("rgb(141, 255, 90)");
+  await page.goto("/fixture.html?fixture=hover&embedding=surface");
+  expect(await tint(".hover-viewport", "::after")).toBe("rgba(0, 0, 0, 0)");
 });

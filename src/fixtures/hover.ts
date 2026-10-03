@@ -155,7 +155,8 @@ export function createHoverFixture(
   const paint = () => {
     updateHud();
     hud.drawMap(world, elapsed);
-    if (!view || !supported) return;
+    // A game loaded unstarted creates no graphics until its host resumes it.
+    if (!view || !supported || (!running && frames === 0)) return;
     view.acquire();
     present(0);
     if (!running) view.release();

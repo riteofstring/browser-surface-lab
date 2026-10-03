@@ -22,7 +22,12 @@ if (title) {
   title.textContent = fixtureId;
 }
 applyInitialFixtureTheme(window.location.search);
-const handle = await mountFixture(fixtureId, root);
+// `autostart=0` mounts a fixture without starting it, for hosts that load
+// one in the background and start it when it is shown.
+const handle = await mountFixture(fixtureId, root, {
+  autoStart:
+    new URLSearchParams(window.location.search).get("autostart") !== "0",
+});
 const removeBridge = installFixtureBridge(handle);
 if (status) {
   status.value = handle.snapshot().supported ? "Running" : "Unavailable";

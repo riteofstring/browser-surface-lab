@@ -1,5 +1,5 @@
 {
-  "aggregate": "18950536d1808db4a5b3fee0d5a3cb7d7b9f0b91d2254c7b0d8b16d5d4d58b44",
+  "aggregate": "06283bf5d73c1773c23d67b56d3b4ca3fea976a9f161e32b1517741264769428",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -98,8 +98,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "e0f047a40ff8bba58985fccdb5df27ac56c17671de4ba6c70e746c383b8c4ba9",
-      "size": 9614
+      "sha256": "9e5960295549b7f411c5544e82b7d0313a260f4dd4dfd4cbc9cd0d4be0a83787",
+      "size": 9796
     },
     {
       "path": "scripts/freeze-protected-inputs.mjs",
@@ -133,8 +133,8 @@
     },
     {
       "path": "src/fixture-entry.ts",
-      "sha256": "bccf89e8cb8b7fb98bd0bcbb8a73df43ee3da0e9c88fa9aff77170b6474570a6",
-      "size": 1281
+      "sha256": "2f90392cbbdc663c0bfcbea5d3b4f2552be6dd44ba9b6d2daf53379df04b8db4",
+      "size": 1504
     },
     {
       "path": "src/fixtures/canvas-2d.ts",
@@ -203,13 +203,13 @@
     },
     {
       "path": "src/fixtures/hover.css",
-      "sha256": "cd0733664e125c32fa0de76c633f3954d77da6506301a9737986344a5cf1db12",
-      "size": 7470
+      "sha256": "95127e41a592308c1d8357dae77448e5585aef044fc8115056b837e245dd98e4",
+      "size": 7785
     },
     {
       "path": "src/fixtures/hover.ts",
-      "sha256": "30e1ada0059823d33ba54f42a7640f8eec1f2f7998536a3b2120e11b8a52dc67",
-      "size": 12353
+      "sha256": "55b366627eda818ead09e86a55b961b5ff844710c925480ac16f9185b54a59e9",
+      "size": 12461
     },
     {
       "path": "src/fixtures/lifecycle.ts",
@@ -283,13 +283,13 @@
     },
     {
       "path": "src/shared/theme.ts",
-      "sha256": "18c76e42b106b61062c23a244bea99da0964aad15ec6a8909a4ba06c1a8bc297",
-      "size": 6728
+      "sha256": "ad6b97ef337cd60765e523ac8a14015ecd9c2463b4e45d67e32bdfbc96820ec6",
+      "size": 6738
     },
     {
       "path": "src/styles.css",
-      "sha256": "91032c2ca51306160bb991c3d2d9285839e3dbb23a4382afa86a27cd900ec28e",
-      "size": 10746
+      "sha256": "c2f8be260baa8ceb6131911b97859eb001fcb518bc47f879a08c309e01b3c7bf",
+      "size": 10773
     },
     {
       "path": "tests/canvas-capture.spec.ts",
@@ -303,8 +303,8 @@
     },
     {
       "path": "tests/hover.spec.ts",
-      "sha256": "a86fbb2fa495cfcbd93dc81f8cbc8ea45043d9df55caf42862bd30d70a95a8e8",
-      "size": 8039
+      "sha256": "3c4389f4a5ef1962132e3dc71fba07e53b0c7c8a9eeabad12bf90d090bd002a7",
+      "size": 9623
     },
     {
       "path": "tests/theme.spec.ts",

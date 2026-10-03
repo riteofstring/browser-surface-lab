@@ -26,6 +26,7 @@ const colorStyles = [
   "positive",
   "warning",
   "focus",
+  "tint",
 ] as const;
 const sizeStyles = [
   "font-size",

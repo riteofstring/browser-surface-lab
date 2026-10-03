@@ -27,6 +27,17 @@
 .hover-still[hidden] {
   display: none;
 }
+/* A host's tint colours the 3D view (mirror included) but not the HUD, and
+   keeps enough of the scene's own hue to tell the teams apart. */
+.hover-viewport::after {
+  position: absolute;
+  inset: 0;
+  background: var(--lab-tint);
+  content: "";
+  mix-blend-mode: color;
+  opacity: 0.6;
+  pointer-events: none;
+}
 .hover-hud {
   position: absolute;
   inset: 0;
