@@ -1,5 +1,5 @@
 {
-  "aggregate": "0d00c67a3445ac41316113f427d16e55d0e194e3bf9a04adedc521a8029e5347",
+  "aggregate": "cee921c0e690ae0fb7666c7b1da305d516608c0f9f9f7e0bd61e5a5eeb246ec8",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -158,8 +158,8 @@
     },
     {
       "path": "src/fixtures/hover-render.ts",
-      "sha256": "7bd0122e324f1a6636800bf827dd5b3052f3756d732bb1c06274698dcee5b313",
-      "size": 14918
+      "sha256": "cfe5b8affda0a71d72011893b051bdd6eedf5b6d1b58cad3c1731ff0e93f6569",
+      "size": 15048
     },
     {
       "path": "src/fixtures/hover-world.ts",
@@ -168,13 +168,13 @@
     },
     {
       "path": "src/fixtures/hover.css",
-      "sha256": "95aa4cc7dc57a3673369be78f0e77b20ce2ac67e7018adbcb24f03ebfcf24e18",
-      "size": 4467
+      "sha256": "6aefe984053d33b7312ecbfbc065c6c4649edbfec6c98be00e796d9386b5114f",
+      "size": 5678
     },
     {
       "path": "src/fixtures/hover.ts",
-      "sha256": "5c951715158a420ae6b4ca135725a14739d57b5271d15f05f2436ef144bd3d19",
-      "size": 14736
+      "sha256": "6059422d2e9c56df99e5b18218ccf05dc518d53af2162cd9ed07dbfa5517064d",
+      "size": 15018
     },
     {
       "path": "src/fixtures/lifecycle.ts",
@@ -263,8 +263,8 @@
     },
     {
       "path": "tests/hover.spec.ts",
-      "sha256": "923eae0ddf5addf56502f36d28435605d9645ccb79c5c15cc7168026c6ef8b7d",
-      "size": 5716
+      "sha256": "3edaf04fbb85fdce1a09558f753f759bce431582039eecab4b38f7abccb866db",
+      "size": 5804
     },
     {
       "path": "tests/theme.spec.ts",

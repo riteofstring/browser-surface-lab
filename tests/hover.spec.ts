@@ -56,14 +56,22 @@ test("hover spends items and resets to a fresh game", async ({ page }) => {
   await page.getByRole("button", { name: "Start" }).click();
   await page.keyboard.press("a");
   await page.waitForTimeout(80);
-  await expect(page.locator('[data-item="spring"]')).toHaveText("×0");
+  await expect(page.locator('.hover-items [data-item="spring"]')).toHaveText(
+    "×0",
+  );
   await page.keyboard.press("s");
   await page.keyboard.press("d");
-  await expect(page.locator('[data-item="barrier"]')).toHaveText("×0");
-  await expect(page.locator('[data-item="cloak"]')).toHaveText("×0");
+  await expect(page.locator('.hover-items [data-item="barrier"]')).toHaveText(
+    "×0",
+  );
+  await expect(page.locator('.hover-items [data-item="cloak"]')).toHaveText(
+    "×0",
+  );
   await page.evaluate(() => window.__surfaceLab!.command("reset"));
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
-  await expect(page.locator('[data-item="spring"]')).toHaveText("×1");
+  await expect(page.locator('.hover-items [data-item="spring"]')).toHaveText(
+    "×1",
+  );
   expect((await snapshot(page)).counters.steps).toBe(0);
 });
 

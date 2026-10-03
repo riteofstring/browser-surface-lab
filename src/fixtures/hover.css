@@ -158,38 +158,91 @@
   cursor: pointer;
 }
 .hover-action:focus-visible,
-.hover-error button:focus-visible,
-.hover-touch button:focus-visible {
+.hover-error button:focus-visible {
   outline: 2px solid var(--lab-focus);
   outline-offset: 3px;
 }
 .hover-touch {
-  position: absolute;
-  right: 10px;
-  bottom: 124px;
-  left: 10px;
   display: none;
-  grid-template-columns: repeat(4, 48px) 1fr repeat(3, 48px);
-  gap: 6px;
-}
-.hover-touch button {
-  height: 48px;
-  border: 1px solid var(--lab-border);
-  border-radius: var(--lab-radius);
-  color: var(--lab-text-strong);
-  background: color-mix(in srgb, var(--lab-page) 70%, transparent);
-  font-family: var(--lab-font-mono);
-  touch-action: none;
-}
-.hover-touch button:nth-child(5) {
-  grid-column: 6;
 }
 @media (pointer: coarse) {
-  .hover-touch {
-    display: grid;
+  .hover {
+    --hover-touch-height: 132px;
   }
-  .hover-help {
+  .hover-viewport,
+  .hover-hud,
+  .hover-overlay {
+    bottom: var(--hover-touch-height);
+  }
+  .hover-help,
+  .hover-items {
     display: none;
+  }
+  .hover-map {
+    width: 84px;
+    height: 84px;
+  }
+  .hover-touch {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    height: var(--hover-touch-height);
+    grid-template-areas:
+      "items items"
+      "steer drive";
+    grid-template-rows: 44px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 10px 10px;
+    border-top: 1px solid var(--lab-border);
+    background: var(--lab-surface);
+  }
+  .hover-touch-group {
+    display: flex;
+    gap: 8px;
+  }
+  .hover-touch-group:first-child {
+    grid-area: steer;
+  }
+  .hover-touch-group:last-child {
+    grid-area: drive;
+    justify-content: flex-end;
+  }
+  .hover-touch-items {
+    grid-area: items;
+    justify-content: center;
+  }
+  .hover-touch button {
+    min-width: 0;
+    flex: 0 1 76px;
+    border: 1px solid var(--lab-border);
+    border-radius: var(--lab-radius);
+    color: var(--lab-text-strong);
+    background: var(--lab-surface-raised);
+    font-family: var(--lab-font-mono);
+    font-size: 22px;
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+  .hover-touch-items button {
+    display: flex;
+    flex: 1 1 0;
+    max-width: 120px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: var(--lab-font-family);
+    font-size: var(--lab-font-size-small);
+  }
+  .hover-touch-items b {
+    color: var(--lab-positive);
+    font-family: var(--lab-font-mono);
+    font-weight: var(--lab-font-weight);
+  }
+  .hover-touch button:active {
+    border-color: var(--lab-accent);
+    background: color-mix(in srgb, var(--lab-accent) 25%, var(--lab-surface));
   }
 }
 .hover-error {

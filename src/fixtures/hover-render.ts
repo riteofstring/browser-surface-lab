@@ -424,6 +424,8 @@ export function createHoverRenderer(
       width = Math.max(1, nextWidth);
       height = Math.max(1, nextHeight);
       camera.aspect = width / height;
+      // Portrait panes keep a usable horizontal view.
+      camera.fov = camera.aspect < 1 ? 64 + (1 - camera.aspect) * 30 : 64;
       camera.updateProjectionMatrix();
       renderer?.setSize(width, height, false);
     },

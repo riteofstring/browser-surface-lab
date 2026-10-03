@@ -30,15 +30,18 @@ const itemKeys: Record<string, keyof Controls> = {
   d: "cloak",
 };
 
-const touchButtons: [keyof Controls, string, string][] = [
-  ["left", "◀", "Turn left"],
-  ["thrust", "▲", "Thrust"],
-  ["reverse", "▼", "Reverse"],
-  ["right", "▶", "Turn right"],
-  ["jump", "A", "Jump"],
-  ["barrier", "S", "Drop a wall"],
-  ["cloak", "D", "Cloak"],
-];
+const touchButton = (control: keyof Controls, label: string, face: string) =>
+  `<button type="button" data-control="${control}" aria-label="${label}">${face}</button>`;
+
+const touchItem = (control: keyof Controls, item: string, label: string) =>
+  touchButton(control, label, `${label}<b data-item="${item}"></b>`);
+
+// Steering under the left thumb, thrust under the right, items between.
+const touchBar = `<div class="hover-touch">
+  <div class="hover-touch-group">${touchButton("left", "Turn left", "◀")}${touchButton("right", "Turn right", "▶")}</div>
+  <div class="hover-touch-group hover-touch-items">${touchItem("jump", "spring", "Jump")}${touchItem("barrier", "barrier", "Wall")}${touchItem("cloak", "cloak", "Cloak")}</div>
+  <div class="hover-touch-group">${touchButton("reverse", "Reverse", "▼")}${touchButton("thrust", "Thrust", "▲")}</div>
+</div>`;
 
 const overlays: Record<
   Exclude<GameState, "playing">,
@@ -103,12 +106,7 @@ export function createHoverFixture(
     <button type="button" class="hover-action"></button>
     <p class="hover-help">Arrows drive · A/Space jump · S wall · D cloak · Enter pause</p>
   </div>
-  <div class="hover-touch">${touchButtons
-    .map(
-      ([control, symbol, label]) =>
-        `<button type="button" data-control="${control}" aria-label="${label}">${symbol}</button>`,
-    )
-    .join("")}</div>
+  ${touchBar}
   <div class="hover-error" hidden><p role="alert"></p><button type="button">Retry graphics</button></div>`;
   const viewport = root.querySelector<HTMLElement>(".hover-viewport")!;
   const overlay = root.querySelector<HTMLElement>(".hover-overlay")!;
@@ -120,11 +118,12 @@ export function createHoverFixture(
   const mapContext = map.getContext("2d")!;
   const playerPips = root.querySelector<HTMLElement>('[data-team="player"]')!;
   const rivalPips = root.querySelector<HTMLElement>('[data-team="rival"]')!;
-  const items = {
-    spring: root.querySelector<HTMLElement>('[data-item="spring"]')!,
-    barrier: root.querySelector<HTMLElement>('[data-item="barrier"]')!,
-    cloak: root.querySelector<HTMLElement>('[data-item="cloak"]')!,
-  };
+  const itemCounts = [...root.querySelectorAll<HTMLElement>("[data-item]")].map(
+    (element) => ({
+      element,
+      item: element.dataset.item as keyof HoverWorld["inventory"],
+    }),
+  );
   const error = root.querySelector<HTMLElement>(".hover-error")!;
   const retry = error.querySelector("button")!;
   const mapBase = document.createElement("canvas");
@@ -206,9 +205,8 @@ export function createHoverFixture(
     setText(playerPips, pips(world.captured("player")));
     setText(rivalPips, pips(world.captured("rival")));
     setText(clock, clockText(world.time));
-    setText(items.spring, `×${world.inventory.spring}`);
-    setText(items.barrier, `×${world.inventory.barrier}`);
-    setText(items.cloak, `×${world.inventory.cloak}`);
+    for (const { element, item } of itemCounts)
+      setText(element, `×${world.inventory[item]}`);
     if (shownState === world.state) return;
     shownState = world.state;
     root.dataset.state = world.state;
