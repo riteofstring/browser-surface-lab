@@ -129,12 +129,8 @@ export const createWebgl2Fixture: FixtureFactory = (root, options = {}) => {
         throw new Error("WebGL resource allocation failed");
       }
       const vertices = new Float32Array([
-        -0.62, -0.62, 0, 1,
-        0.62, -0.62, 1, 1,
-        -0.62, 0.62, 0, 0,
-        -0.62, 0.62, 0, 0,
-        0.62, -0.62, 1, 1,
-        0.62, 0.62, 1, 0,
+        -0.62, -0.62, 0, 1, 0.62, -0.62, 1, 1, -0.62, 0.62, 0, 0, -0.62, 0.62,
+        0, 0, 0.62, -0.62, 1, 1, 0.62, 0.62, 1, 0,
       ]);
       context.bindVertexArray(vao);
       context.bindBuffer(context.ARRAY_BUFFER, buffer);
@@ -142,12 +138,27 @@ export const createWebgl2Fixture: FixtureFactory = (root, options = {}) => {
       const positionLocation = context.getAttribLocation(program, "a_position");
       const uvLocation = context.getAttribLocation(program, "a_uv");
       context.enableVertexAttribArray(positionLocation);
-      context.vertexAttribPointer(positionLocation, 2, context.FLOAT, false, 16, 0);
+      context.vertexAttribPointer(
+        positionLocation,
+        2,
+        context.FLOAT,
+        false,
+        16,
+        0,
+      );
       context.enableVertexAttribArray(uvLocation);
       context.vertexAttribPointer(uvLocation, 2, context.FLOAT, false, 16, 8);
       context.bindTexture(context.TEXTURE_2D, texture);
-      context.texParameteri(context.TEXTURE_2D, context.TEXTURE_MIN_FILTER, context.NEAREST);
-      context.texParameteri(context.TEXTURE_2D, context.TEXTURE_MAG_FILTER, context.NEAREST);
+      context.texParameteri(
+        context.TEXTURE_2D,
+        context.TEXTURE_MIN_FILTER,
+        context.NEAREST,
+      );
+      context.texParameteri(
+        context.TEXTURE_2D,
+        context.TEXTURE_MAG_FILTER,
+        context.NEAREST,
+      );
       context.texImage2D(
         context.TEXTURE_2D,
         0,
@@ -180,11 +191,13 @@ export const createWebgl2Fixture: FixtureFactory = (root, options = {}) => {
       };
     } catch (error) {
       supported = false;
-      label.querySelector("strong")?.replaceChildren(
-        document.createTextNode(
-          error instanceof Error ? error.message : "WebGL setup failed",
-        ),
-      );
+      label
+        .querySelector("strong")
+        ?.replaceChildren(
+          document.createTextNode(
+            error instanceof Error ? error.message : "WebGL setup failed",
+          ),
+        );
     }
   }
 

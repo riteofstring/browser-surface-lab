@@ -36,7 +36,8 @@ export const createFormsFixture: FixtureFactory = (root, options = {}) => {
     } else {
       control = document.createElement("input");
       control.type = index % 4 === 0 ? "range" : "text";
-      control.value = control.type === "range" ? String(index * 3) : `Value ${index + 1}`;
+      control.value =
+        control.type === "range" ? String(index * 3) : `Value ${index + 1}`;
     }
     control.name = `setting-${index + 1}`;
     field.append(label, control);
@@ -55,7 +56,11 @@ export const createFormsFixture: FixtureFactory = (root, options = {}) => {
   let ticks = 0;
   const onInput = (event: Event): void => {
     const target = event.target;
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) {
+    if (!(
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLTextAreaElement
+    )) {
       return;
     }
     inputEvents += 1;

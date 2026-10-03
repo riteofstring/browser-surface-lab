@@ -1,4 +1,4 @@
-export interface FixtureTheme {
+interface FixtureTheme {
   colorMode: "dark" | "light";
   styles?: Partial<Record<FixtureStyleName, string>>;
 }
@@ -36,7 +36,7 @@ const textStyles = [
   ...lineStyles,
   "radius",
 ] as const;
-export type FixtureStyleName =
+type FixtureStyleName =
   (typeof colorStyles)[number] | (typeof textStyles)[number];
 
 function styleProperty(name: string): string | null {

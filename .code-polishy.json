@@ -1,0 +1,228 @@
+{
+  "version": 4,
+  "project": {
+    "kind": "application",
+    "capabilities": ["frontend", "ui"]
+  },
+  "scope": {
+    "exclude": [],
+    "generated": [],
+    "entryPoints": [
+      "src/fixture-entry.ts",
+      "src/gallery-entry.ts",
+      "src/index-entry.ts",
+      "scripts/freeze-protected-inputs.mjs",
+      "scripts/verify-lab-contract.mjs",
+      "scripts/verify-protected-inputs.mjs"
+    ],
+    "development": [
+      "scripts/**",
+      "tests/**",
+      "playwright.config.ts",
+      "vite.config.ts"
+    ]
+  },
+  "quality": {
+    "allowComments": true
+  },
+  "documentation": {
+    "design": [
+      {
+        "path": "docs/design/lab-architecture.md",
+        "module": "lab"
+      },
+      {
+        "path": "docs/design/protected-inputs.md",
+        "sourcePaths": [
+          "scripts/freeze-protected-inputs.mjs",
+          "scripts/hash-lib.mjs",
+          "scripts/protected-inputs-lib.mjs",
+          "scripts/verify-protected-inputs.mjs"
+        ]
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "lab",
+      "paths": [
+        "src/**",
+        "public/**",
+        "fixture.html",
+        "gallery.html",
+        "index.html",
+        "workload-manifest.json",
+        "vite.config.ts",
+        "playwright.config.ts",
+        "tsconfig.json",
+        "package.json",
+        ".npmrc",
+        ".node-version",
+        "scripts/**",
+        "receipts/**",
+        "pnpm-workspace.yaml"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "lab-contract",
+      "provides": ["lab-contract"],
+      "argv": ["pnpm", "contract"],
+      "modules": ["lab"],
+      "runOn": ["check", "gate"],
+      "timeoutSeconds": 120
+    },
+    {
+      "name": "protected-inputs",
+      "provides": ["protected-inputs"],
+      "argv": ["pnpm", "integrity"],
+      "modules": ["lab"],
+      "runOn": ["check", "gate"],
+      "timeoutSeconds": 120
+    },
+    {
+      "name": "lab-build",
+      "provides": ["build"],
+      "argv": ["pnpm", "build"],
+      "modules": ["lab"],
+      "runOn": ["build"],
+      "timeoutSeconds": 600
+    }
+  ],
+  "tests": {
+    "requiredKinds": ["browser"],
+    "ownership": [
+      {
+        "paths": ["tests/tier-one-fixtures.spec.ts"],
+        "module": "lab",
+        "focusedSuite": "lab-tier-one"
+      },
+      {
+        "paths": [
+          "tests/canvas-capture.spec.ts",
+          "tests/theme.spec.ts",
+          "tests/three-scenes.spec.ts"
+        ],
+        "module": "lab",
+        "focusedSuite": "lab-tier-one",
+        "executionSuite": "lab-browser"
+      },
+      {
+        "paths": ["scripts/protected-inputs-lib.test.mjs"],
+        "module": "lab",
+        "focusedSuite": "lab-protected-inputs"
+      }
+    ],
+    "suites": [
+      {
+        "name": "lab-tier-one",
+        "kind": "browser",
+        "scope": "module",
+        "modules": ["lab"],
+        "cost": "quick",
+        "argv": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "tests/tier-one-fixtures.spec.ts"
+        ],
+        "paths": ["tests/tier-one-fixtures.spec.ts"],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
+        "name": "lab-protected-inputs",
+        "kind": "unit",
+        "scope": "module",
+        "modules": ["lab"],
+        "cost": "quick",
+        "argv": ["node", "--test", "scripts/protected-inputs-lib.test.mjs"],
+        "paths": ["scripts/protected-inputs-lib.test.mjs"],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "lab-browser",
+        "kind": "browser",
+        "scope": "repository",
+        "cost": "expensive",
+        "argv": ["pnpm", "test:browser"],
+        "paths": [
+          "tests/canvas-capture.spec.ts",
+          "tests/theme.spec.ts",
+          "tests/three-scenes.spec.ts",
+          "tests/tier-one-fixtures.spec.ts"
+        ],
+        "runOn": ["full"],
+        "timeoutSeconds": 900
+      }
+    ]
+  },
+  "supplyChain": {
+    "minimumReleaseAgeDays": 30,
+    "preferredNewDependencyAgeDays": 90,
+    "auditLevel": "low",
+    "allowedLicenses": [
+      "0BSD",
+      "Apache-2.0",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "BlueOak-1.0.0",
+      "CC0-1.0",
+      "ISC",
+      "MIT",
+      "MIT-0",
+      "MPL-2.0",
+      "Python-2.0"
+    ]
+  },
+  "exceptions": [
+    {
+      "id": "xterm-fixture-factory-complexity",
+      "check": "quality.complexity",
+      "path": "src/fixtures/xterm.ts",
+      "subject": "complexity",
+      "reason": "Pre-existing branching in protected Tier 1 workload source, found at Code Polishy adoption. Refactoring it would change a measured workload, which needs its own reviewed baseline change. Compensating control: pnpm contract, pnpm integrity, and the Tier 1 browser suite pin its behavior; new branching in this function is prohibited.",
+      "owner": "Claude",
+      "expires": "2027-01-03"
+    },
+    {
+      "id": "webgl-2-fixture-render-complexity",
+      "check": "quality.complexity",
+      "path": "src/fixtures/webgl-2.ts",
+      "subject": "complexity",
+      "reason": "Pre-existing branching in protected Tier 1 workload source, found at Code Polishy adoption. Refactoring it would change a measured workload, which needs its own reviewed baseline change. Compensating control: pnpm contract, pnpm integrity, and the Tier 1 browser suite pin its behavior; new branching in this function is prohibited.",
+      "owner": "Claude",
+      "expires": "2027-01-03"
+    },
+    {
+      "id": "fixture-lifecycle-command-complexity",
+      "check": "quality.complexity",
+      "path": "src/fixtures/lifecycle.ts",
+      "subject": "complexity",
+      "reason": "Pre-existing branching in protected Tier 1 workload source, found at Code Polishy adoption. Refactoring it would change a measured workload, which needs its own reviewed baseline change. Compensating control: pnpm contract, pnpm integrity, and the Tier 1 browser suite pin its behavior; new branching in this function is prohibited.",
+      "owner": "Claude",
+      "expires": "2027-01-03"
+    },
+    {
+      "id": "tier-one-manifest-assertion-complexity",
+      "check": "quality.complexity",
+      "path": "tests/tier-one-fixtures.spec.ts",
+      "subject": "complexity",
+      "reason": "Pre-existing per-fixture branching in expectManifestContract, found at Code Polishy adoption; splitting it is unrelated to tooling adoption. Compensating control: the function only asserts manifest values and runs in the quick lab-tier-one suite, so a broken branch fails visibly.",
+      "owner": "Claude",
+      "expires": "2027-01-03"
+    },
+    {
+      "id": "lab-contract-import-scan-depth",
+      "check": "quality.complexity",
+      "path": "scripts/verify-lab-contract.mjs",
+      "subject": "max-depth",
+      "reason": "Pre-existing nesting in the fixture import scan, found at Code Polishy adoption; restructuring the isolation enforcer is unrelated to tooling adoption. Compensating control: pnpm contract runs in every check and gate and fails closed on any disallowed import.",
+      "owner": "Claude",
+      "expires": "2027-01-03"
+    }
+  ]
+}

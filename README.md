@@ -62,7 +62,11 @@ frame.contentWindow.postMessage(
     requestId: "appearance-1",
     theme: {
       colorMode: "light",
-      styles: { surface: "#ffffff", text: "#202020", "font-family": "sans-serif" },
+      styles: {
+        surface: "#ffffff",
+        text: "#202020",
+        "font-family": "sans-serif",
+      },
     },
   },
   fixtureOrigin,
@@ -114,6 +118,14 @@ pnpm freeze:inputs   # records a new protected-input baseline
 `pnpm dev:fixtures` serves the lab at `http://127.0.0.1:5185`. Browser tests use
 `localhost:5185` as a second origin for cross-origin framing. The WebGPU and
 WebGL fixtures report themselves as unsupported where the browser lacks the API.
+
+## Code Polishy
+
+The repository is governed by Code Polishy 0.28.1, pinned in
+`.code-polishy.lock.json` and configured in `.code-polishy.json`. Run it through
+the wrapper: `./code-polishyw setup` once after cloning, then for example
+`./code-polishyw doctor --strict` or `./code-polishyw check --all`
+(PowerShell: `.\code-polishyw.ps1`).
 
 ## License
 

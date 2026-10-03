@@ -61,10 +61,15 @@ for (const tierTwoPackage of [
 }
 
 const runtimePackages = new Set(Object.keys(packageJson.dependencies ?? {}));
-const fixtureRoots = [resolve(root, "src", "fixtures"), resolve(root, "src", "shared")];
-const allowedLocalPaths = [...fixtureRoots, resolve(root, "workload-manifest.json")];
-const importPattern =
-  /(?:\bfrom\s*|\bimport\s*\(?\s*)["']([^"']+)["']/gu;
+const fixtureRoots = [
+  resolve(root, "src", "fixtures"),
+  resolve(root, "src", "shared"),
+];
+const allowedLocalPaths = [
+  ...fixtureRoots,
+  resolve(root, "workload-manifest.json"),
+];
+const importPattern = /(?:\bfrom\s*|\bimport\s*\(?\s*)["']([^"']+)["']/gu;
 
 function packageName(specifier) {
   const parts = specifier.split("/");
@@ -84,8 +89,7 @@ for (const directory of fixtureRoots) {
         if (
           !allowedLocalPaths.some(
             (allowed) =>
-              target === allowed ||
-              !relative(allowed, target).startsWith(".."),
+              target === allowed || !relative(allowed, target).startsWith(".."),
           )
         ) {
           throw new Error(
