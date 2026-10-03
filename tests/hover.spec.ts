@@ -34,18 +34,19 @@ test("hover drives to a pod, pauses with its pixels and resumes on request", asy
     Number(start.details.z) - 1,
   );
 
+  const canvas = await page.locator(".hover-canvas canvas").elementHandle();
   await page.evaluate(() => window.__surfaceLab!.command("pause"));
   const paused = await snapshot(page);
   expect(paused.details.state).toBe("paused");
-  expect(paused.details.rendering).toBe(false);
   await expect(page.locator(".hover-still")).toBeVisible();
   await page.waitForTimeout(150);
   expect((await snapshot(page)).counters.steps).toBe(paused.counters.steps);
 
   await page.evaluate(() => window.__surfaceLab!.command("resume"));
   const resumed = await snapshot(page);
-  expect(resumed.details.rendering).toBe(true);
   expect(resumed.details.state).toBe("paused");
+  // A quick return reuses the graphics context instead of rebuilding it.
+  expect(await canvas!.evaluate((element) => element.isConnected)).toBe(true);
   await expect(page.getByRole("button", { name: "Resume" })).toBeVisible();
   await page.locator(".hover").focus();
   await page.keyboard.press("Enter");
@@ -54,8 +55,7 @@ test("hover drives to a pod, pauses with its pixels and resumes on request", asy
     .toBeGreaterThan(paused.counters.steps!);
   // The paused still gives way to the live view again.
   await expect(page.locator(".hover-still")).toBeHidden();
-  const canvas = page.locator(".hover-canvas canvas");
-  await expect(canvas).toBeVisible();
+  await expect(page.locator(".hover-canvas canvas")).toBeVisible();
   await page.keyboard.down("ArrowLeft");
   const before = await page.locator(".hover-viewport").screenshot();
   await page.waitForTimeout(400);
@@ -263,4 +263,20 @@ test("hover.html serves the game alone with the same bridge and options", async 
   expect(state.running).toBe(false);
   expect(state.details.maze).toBe("city");
   expect(requests.some((url) => /xterm|react-dom/u.test(url))).toBe(false);
+});
+
+test("hover gives its graphics context back after half a minute paused", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto("/fixture.html?fixture=hover&embedding=surface");
+  await page.clock.runFor(500);
+  await expect(page.locator(".hover-canvas canvas")).toHaveCount(1);
+  await page.evaluate(() => window.__surfaceLab!.command("pause"));
+  await page.clock.runFor(29_000);
+  await expect(page.locator(".hover-canvas canvas")).toHaveCount(1);
+  await page.clock.runFor(2_000);
+  await expect(page.locator(".hover-canvas canvas")).toHaveCount(0);
+  expect((await snapshot(page)).details.rendering).toBe(false);
+  await expect(page.locator(".hover-still")).toBeVisible();
 });

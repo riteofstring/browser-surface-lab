@@ -91,6 +91,7 @@ export function createHoverRenderer(
   world: HoverWorld,
   host: HTMLElement,
   lost: () => void,
+  ready: () => void,
 ) {
   const { arena } = world;
   const { maze } = arena;
@@ -356,9 +357,11 @@ export function createHoverRenderer(
   let viewWidth = 1;
   let viewHeight = 1;
   let lastClock = 0;
+  let compiled = false;
 
   const acquire = () => {
     if (renderer) return renderer;
+    compiled = false;
     const created = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: "high-performance",
@@ -375,8 +378,14 @@ export function createHoverRenderer(
       lost();
     });
     canvasHost.replaceChildren(created.domElement);
-    still.hidden = true;
     renderer = created;
+    // Browsers with parallel shader compilation build the shaders off the
+    // main thread; the still stays up until the first real frame.
+    void created.compileAsync(scene, camera).then(() => {
+      if (renderer !== created) return;
+      compiled = true;
+      ready();
+    });
     return created;
   };
 
@@ -512,16 +521,24 @@ export function createHoverRenderer(
     current.render(scene, mirror);
   };
 
-  const release = () => {
-    if (!renderer) return;
+  /** Holds the last frame as a still while keeping the graphics context,
+   * so a quick return needs no new context or shader compilation. */
+  const suspend = () => {
     const current = renderer;
-    renderer = null;
+    if (!current || !still.hidden || !compiled) return;
     sync(lastClock);
     draw(current);
     still.width = current.domElement.width;
     still.height = current.domElement.height;
     still.getContext("2d")?.drawImage(current.domElement, 0, 0);
     still.hidden = false;
+  };
+
+  const release = () => {
+    if (!renderer) return;
+    suspend();
+    const current = renderer;
+    renderer = null;
     current.dispose();
     current.forceContextLoss();
     current.domElement.remove();
@@ -531,6 +548,7 @@ export function createHoverRenderer(
 
   return {
     acquire,
+    suspend,
     release,
     mirrorBox,
     get active() {
@@ -552,11 +570,12 @@ export function createHoverRenderer(
     },
     render(dt: number, clock: number) {
       const current = renderer;
-      if (!current) return false;
+      if (!current || !compiled) return false;
       lastClock = clock;
       sync(clock);
       followCamera(dt);
       draw(current);
+      still.hidden = true;
       return true;
     },
     dispose() {

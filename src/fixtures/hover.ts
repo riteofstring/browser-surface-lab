@@ -100,6 +100,7 @@ export function createHoverFixture(
   let view: HoverRenderer | null = null;
   let running = false;
   let startRequested = -Infinity;
+  let releaseTimer = 0;
   let supported = true;
   let animationFrame = 0;
   let previous = 0;
@@ -159,7 +160,7 @@ export function createHoverFixture(
     if (!view || !supported || (!running && frames === 0)) return;
     view.acquire();
     present(0);
-    if (!running) view.release();
+    if (!running) view.suspend();
   };
 
   function stopLoop() {
@@ -250,10 +251,17 @@ export function createHoverFixture(
     error.hidden = true;
     supported = true;
     try {
-      view = createHoverRenderer(world, viewport, () => {
-        contextLosses += 1;
-        fail("Graphics context lost. Retry to keep playing.");
-      });
+      view = createHoverRenderer(
+        world,
+        viewport,
+        () => {
+          contextLosses += 1;
+          fail("Graphics context lost. Retry to keep playing.");
+        },
+        () => {
+          if (!animationFrame) paint();
+        },
+      );
       view.resize(viewport.clientWidth, viewport.clientHeight);
       shownState = null;
       paint();
@@ -347,6 +355,7 @@ export function createHoverFixture(
   const removeTheme = observeFixtureTheme(paint);
 
   const resumeHost = () => {
+    window.clearTimeout(releaseTimer);
     running = true;
     if (!supported) return;
     view?.acquire();
@@ -364,7 +373,10 @@ export function createHoverFixture(
       running = false;
       hold();
       stopLoop();
-      view?.release();
+      view?.suspend();
+      // Give the graphics context back only after a while away.
+      window.clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(() => view?.release(), 30_000);
     },
     resume: resumeHost,
     reset() {
@@ -377,6 +389,7 @@ export function createHoverFixture(
     },
     destroy() {
       stopLoop();
+      window.clearTimeout(releaseTimer);
       removeTheme();
       resizeObserver.disconnect();
       document.removeEventListener("visibilitychange", visibility);
