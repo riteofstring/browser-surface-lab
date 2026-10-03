@@ -1,5 +1,5 @@
 {
-  "aggregate": "ac106d5dbf1d6f1ea0755e9433125887f5c988745de33e0cfb00bd4812ac9e63",
+  "aggregate": "2e81a6984330462865c6213b9ce8257e9edea3fd0ccf5672e4c87ac1b640e13f",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -98,8 +98,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "59a1e978746db2c4d8699ead3125b9cd72556e43f026a59f6abecee29c31520e",
-      "size": 8150
+      "sha256": "29ea8d0d449e40d0075531be693e63bac783cda0c7edfa09fdc953c4eb9dce80",
+      "size": 8383
     },
     {
       "path": "scripts/freeze-protected-inputs.mjs",
@@ -263,8 +263,8 @@
     },
     {
       "path": "src/shared/bridge.ts",
-      "sha256": "25778118f18b784d72d6542b1fa60d3826d3df5a28fc3122cd289c42c55a6c70",
-      "size": 3413
+      "sha256": "23b5d472a365dfd3bd97ce271b7f9fbb73e9b84f21ade7e3c65b33d24f53aef1",
+      "size": 4472
     },
     {
       "path": "src/shared/theme.ts",

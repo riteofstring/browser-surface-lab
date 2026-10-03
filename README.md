@@ -68,7 +68,10 @@ A framed fixture also posts `{ protocol, type: "key", key, code, altKey,
 ctrlKey, metaKey, shiftKey, repeat }` to its parent for every keydown it did not
 handle (`defaultPrevented` is false) that carries Alt, Control or Meta, or is
 Escape. Hosts can replay these as their own shortcuts, so keyboard focus inside
-a frame does not trap the host's navigation. Snapshots carry proof counters, so hidden,
+a frame does not trap the host's navigation. In the other direction, a parent can send
+`{ protocol, command: "key", type: "keydown" | "keyup", key, code, shiftKey }`
+to pass on a key its own document received; the fixture dispatches it as an
+ordinary key event on its document. Snapshots carry proof counters, so hidden,
 paused, or failed fixtures cannot pass as completed work. In the same document,
 `window.__surfaceLab` exposes `command()` and `snapshot()` for automation.
 

@@ -27,6 +27,42 @@ function isCommandMessage(value: unknown): value is CommandMessage {
   );
 }
 
+interface HostKey {
+  command: "key";
+  key: string;
+  code?: string;
+  protocol: typeof protocol;
+  shiftKey?: boolean;
+  type: "keydown" | "keyup";
+}
+
+function isHostKey(value: unknown): value is HostKey {
+  const candidate = value as Partial<HostKey> | null;
+  return (
+    candidate?.protocol === protocol &&
+    candidate.command === "key" &&
+    (candidate.type === "keydown" || candidate.type === "keyup") &&
+    typeof candidate.key === "string" &&
+    candidate.key.length <= 32
+  );
+}
+
+/** A host passing on a key its document received while the fixture should
+ * have had it; the fixture sees an ordinary key event. */
+function replayHostKey(value: unknown): boolean {
+  if (!isHostKey(value)) return false;
+  document.dispatchEvent(
+    new KeyboardEvent(value.type, {
+      key: value.key,
+      code: typeof value.code === "string" ? value.code : "",
+      shiftKey: value.shiftKey === true,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  return true;
+}
+
 export function installFixtureBridge(handle: FixtureHandle): () => void {
   const command = async (nextCommand: WorkloadCommand): Promise<void> => {
     await handle.command(nextCommand);
@@ -37,6 +73,7 @@ export function installFixtureBridge(handle: FixtureHandle): () => void {
   };
 
   const onMessage = (event: MessageEvent<unknown>): void => {
+    if (event.source === window.parent && replayHostKey(event.data)) return;
     const value = event.data as {
       protocol?: unknown;
       command?: unknown;
