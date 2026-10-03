@@ -5,6 +5,7 @@ import { Arena } from "../src/fixtures/hover-arena.ts";
 import {
   cellSize,
   emptyControls,
+  frameSteps,
   HoverWorld,
   stealSpeed,
   tierHeight,
@@ -211,4 +212,30 @@ test("the drones win once they carry all the red flags", () => {
     flag.carrier = seeker;
   world.step(1 / 60, emptyControls());
   assert.equal(world.state, "lost");
+});
+
+test("every drawn frame moves the world by exactly its own time", () => {
+  for (const hz of [60, 120, 144, 30]) {
+    const slices = frameSteps(1 / hz);
+    assert.ok(slices.length >= 1, `${hz} Hz frames must not stand still`);
+    assert.ok(Math.abs(slices.reduce((a, b) => a + b, 0) - 1 / hz) < 1e-9);
+    for (const slice of slices) assert.ok(slice <= 1 / 60 + 1e-9);
+  }
+  assert.deepEqual(frameSteps(0), []);
+  // A long stall advances at most a tenth of a second.
+  const stall = frameSteps(1).reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(stall - 0.1) < 1e-9);
+});
+
+test("a car moves the same distance whatever the frame rate", () => {
+  const travel = (hz: number) => {
+    const world = playing();
+    const thrust = { ...emptyControls(), thrust: true };
+    for (let frame = 0; frame < hz; frame++)
+      for (const slice of frameSteps(1 / hz)) world.step(slice, thrust);
+    return world.player.z;
+  };
+  const at60 = travel(60);
+  assert.ok(Math.abs(travel(120) - at60) < 0.5);
+  assert.ok(Math.abs(travel(144) - at60) < 0.5);
 });

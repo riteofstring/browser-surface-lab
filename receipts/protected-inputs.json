@@ -1,5 +1,5 @@
 {
-  "aggregate": "8fad78311696c0224d38fa52f7e61bfc6e959baaa5e69e63b5b6bbdbfc9e4f9b",
+  "aggregate": "d6940ea6231f678b31bb78b1062b07bb2f286f66776f80713afef7fdac2ccc97",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -173,8 +173,8 @@
     },
     {
       "path": "src/fixtures/hover-hud.ts",
-      "sha256": "ae9d602d395178147e9850f621680d66924202af9088ae4dbe13ed721ff939ad",
-      "size": 8491
+      "sha256": "83231d948abf4a2ecc8d5e210082d741181291825563ffea68f6bce7d940bc23",
+      "size": 9130
     },
     {
       "path": "src/fixtures/hover-icons.ts",
@@ -208,8 +208,8 @@
     },
     {
       "path": "src/fixtures/hover-world.ts",
-      "sha256": "b41d4ff164ab39457a5252678259b82065c408f8de83d796530f00902a80bc08",
-      "size": 29016
+      "sha256": "9158ac72269f05526d265e04c6538bd65d54350ab696e3d90ca6c0bf9db9fb26",
+      "size": 29555
     },
     {
       "path": "src/fixtures/hover.css",
@@ -218,8 +218,8 @@
     },
     {
       "path": "src/fixtures/hover.ts",
-      "sha256": "bd719b1e34eac5e9e9f6239a1157cf4b9dbc46d40e577f58413a579a7621cb07",
-      "size": 12944
+      "sha256": "555ec99e3df88423f85b1c25fe908cb872aba807a76cc01212970f1eb2dba002",
+      "size": 12883
     },
     {
       "path": "src/fixtures/lifecycle.ts",
@@ -313,8 +313,8 @@
     },
     {
       "path": "tests/hover-rules.unit.ts",
-      "sha256": "2384c5ee6b4fb5c20efe90e62618283666638644ab5098ec598cfa54955eb7f7",
-      "size": 7576
+      "sha256": "f1133360fe9ddde0dafc31078d34c18cd1102fd6abb81df78d14614e47388739",
+      "size": 8638
     },
     {
       "path": "tests/hover.spec.ts",

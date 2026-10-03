@@ -115,6 +115,16 @@ export function createHud(root: HTMLElement) {
     element.textContent = text;
   };
   let bannerTime = 0;
+  let mirrorStyle: string | null = null;
+  // Theme colours, read once per theme: each read draws and reads back a
+  // canvas pixel, too slow for every radar redraw.
+  let colors: { sunken: string; wall: string; tier: string } | null = null;
+  const palette = () =>
+    (colors ??= {
+      sunken: fixtureColor(root, "surface-sunken"),
+      wall: fixtureColor(root, "text-subtle"),
+      tier: fixtureColor(root, "border"),
+    });
 
   const effects = (world: HoverWorld) => {
     const player = world.player;
@@ -139,11 +149,11 @@ export function createHud(root: HTMLElement) {
       map.width = arena.width * mapScale;
       map.height = arena.depth * mapScale;
     }
-    mapContext.fillStyle = fixtureColor(root, "surface-sunken");
+    mapContext.fillStyle = palette().sunken;
     mapContext.fillRect(0, 0, map.width, map.height);
     const colors: Record<string, string> = {
-      "#": fixtureColor(root, "text-subtle"),
-      "=": fixtureColor(root, "border"),
+      "#": palette().wall,
+      "=": palette().tier,
     };
     for (let index = 0; index < world.explored.length; index++) {
       const { column, row } = arena.cellOf(index);
@@ -195,6 +205,9 @@ export function createHud(root: HTMLElement) {
   };
 
   return {
+    themeChanged() {
+      colors = null;
+    },
     update(world: HoverWorld, clock: number, mirrorBox: Box | null) {
       setText(fields.blue, pips(world.captured("player"), world.flagCount));
       setText(fields.red, pips(world.captured("rival"), world.flagCount));
@@ -210,9 +223,15 @@ export function createHud(root: HTMLElement) {
         banner.hidden = true;
         bannerTime = 0;
       }
-      mirror.hidden = mirrorBox === null;
-      if (mirrorBox)
-        mirror.style.cssText = `left:${mirrorBox.left}px;top:${mirrorBox.top}px;width:${mirrorBox.width}px;height:${mirrorBox.height}px`;
+      // Only touch the frame's style when it moves, to spare a style pass.
+      const frameStyle = mirrorBox
+        ? `left:${mirrorBox.left}px;top:${mirrorBox.top}px;width:${mirrorBox.width}px;height:${mirrorBox.height}px`
+        : "";
+      if (frameStyle !== mirrorStyle) {
+        mirrorStyle = frameStyle;
+        mirror.hidden = mirrorBox === null;
+        mirror.style.cssText = frameStyle;
+      }
     },
     drawMap,
     announce(event: string, clock: number, world: HoverWorld) {

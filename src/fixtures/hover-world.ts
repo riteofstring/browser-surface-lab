@@ -229,6 +229,17 @@ function barrierCells(arena: Arena, barrier: Barrier): number[] {
   return [...cells];
 }
 
+/** Splits one drawn frame's time into equal physics steps of at most 1/60 s,
+ * so every frame moves the world by exactly the time it shows (a fixed step
+ * would leave some frames unmoved: half of them at 120 Hz). Long stalls are
+ * capped so the game slows rather than jumps. */
+export function frameSteps(seconds: number): number[] {
+  const clamped = Math.min(Math.max(seconds, 0), 0.1);
+  if (clamped === 0) return [];
+  const count = Math.ceil(clamped * 60 - 1e-9);
+  return Array.from({ length: count }, () => clamped / count);
+}
+
 interface WorldOptions {
   round?: number;
   score?: number;

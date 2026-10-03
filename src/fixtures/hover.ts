@@ -8,13 +8,13 @@ import { bindTouchControls, touchMarkup } from "./hover-touch";
 import { mazes } from "./hover-mazes";
 import {
   emptyControls,
+  frameSteps,
   HoverWorld,
   type Controls,
   type GameState,
 } from "./hover-world";
 import "./hover.css";
 
-const step = 1 / 60;
 const bestKey = "browser-surface-lab:hover:best";
 
 const driveKeys: Record<string, keyof Controls> = {
@@ -104,7 +104,6 @@ export function createHoverFixture(
   let supported = true;
   let animationFrame = 0;
   let previous = 0;
-  let accumulator = 0;
   let elapsed = 0;
   let frames = 0;
   let contextLosses = 0;
@@ -171,12 +170,10 @@ export function createHoverFixture(
   }
 
   const advance = (dt: number) => {
-    accumulator = Math.min(accumulator + dt, step * 4);
-    while (accumulator >= step) {
+    for (const slice of frameSteps(dt)) {
       // A tap shorter than a step still counts once.
-      world.step(step, { ...controls, ...tapped });
+      world.step(slice, { ...controls, ...tapped });
       tapped = {};
-      accumulator -= step;
     }
     elapsed += dt;
     mapAge += dt;
@@ -353,7 +350,10 @@ export function createHoverFixture(
   resizeObserver.observe(viewport);
   running = options.autoStart !== false;
   initialize();
-  const removeTheme = observeFixtureTheme(paint);
+  const removeTheme = observeFixtureTheme(() => {
+    hud.themeChanged();
+    paint();
+  });
 
   const resumeHost = () => {
     window.clearTimeout(releaseTimer);
