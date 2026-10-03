@@ -38,9 +38,16 @@ test("hover drives to a pod, pauses with its pixels and resumes on request", asy
   await page.evaluate(() => window.__surfaceLab!.command("pause"));
   const paused = await snapshot(page);
   expect(paused.details.state).toBe("paused");
-  await expect(page.locator(".hover-still")).toBeVisible();
-  await page.waitForTimeout(150);
-  expect((await snapshot(page)).counters.steps).toBe(paused.counters.steps);
+  // Pausing draws nothing more: the canvas keeps its last frame on screen.
+  await expect(page.locator(".hover-still")).toBeHidden();
+  const frozen = await page.locator(".hover-viewport").screenshot();
+  await page.waitForTimeout(300);
+  const later = await snapshot(page);
+  expect(later.counters.steps).toBe(paused.counters.steps);
+  expect(later.counters.frames).toBe(paused.counters.frames);
+  expect(
+    (await page.locator(".hover-viewport").screenshot()).equals(frozen),
+  ).toBe(true);
 
   await page.evaluate(() => window.__surfaceLab!.command("resume"));
   const resumed = await snapshot(page);
@@ -122,18 +129,20 @@ test("framed fixtures forward unhandled shortcut keys and loads same-origin host
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Alt+ArrowLeft");
   await page.keyboard.press("Escape");
-  const keys = await page.evaluate(() =>
-    (
+  // Messages arrive asynchronously; wait for both.
+  const keys = () =>
+    page.evaluate(() =>
       (
-        window as Window & {
-          messages?: { type?: string; key?: string; altKey?: boolean }[];
-        }
-      ).messages ?? []
-    )
-      .filter((message) => message?.type === "key")
-      .map((message) => `${message.altKey ? "Alt+" : ""}${message.key}`),
-  );
-  expect(keys).toEqual(["Alt+ArrowLeft", "Escape"]);
+        (
+          window as Window & {
+            messages?: { type?: string; key?: string; altKey?: boolean }[];
+          }
+        ).messages ?? []
+      )
+        .filter((message) => message?.type === "key")
+        .map((message) => `${message.altKey ? "Alt+" : ""}${message.key}`),
+    );
+  await expect.poll(keys).toEqual(["Alt+ArrowLeft", "Escape"]);
   expect(
     await fixture.evaluate(() => window.__surfaceLab!.snapshot().details.state),
   ).toBe("paused");

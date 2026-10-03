@@ -160,7 +160,6 @@ export function createHoverFixture(
     if (!view || !supported || (!running && frames === 0)) return;
     view.acquire();
     present(0);
-    if (!running) view.suspend();
   };
 
   function stopLoop() {
@@ -240,7 +239,9 @@ export function createHoverFixture(
     world.state = "paused";
     stopLoop();
     controls = emptyControls();
-    paint();
+    // The canvas keeps showing the last frame; only the HUD changes.
+    updateHud();
+    hud.drawMap(world, elapsed);
   };
 
   const initialize = () => {
@@ -374,7 +375,6 @@ export function createHoverFixture(
       running = false;
       hold();
       stopLoop();
-      view?.suspend();
       updateHud();
       // Give the graphics context back only after a while away.
       window.clearTimeout(releaseTimer);

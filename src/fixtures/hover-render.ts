@@ -521,9 +521,9 @@ export function createHoverRenderer(
     current.render(scene, mirror);
   };
 
-  /** Holds the last frame as a still while keeping the graphics context,
-   * so a quick return needs no new context or shader compilation. */
-  const suspend = () => {
+  /** Copies the last frame into a 2D still, so the picture outlives the
+   * graphics context; needed only when that context is given back. */
+  const captureStill = () => {
     const current = renderer;
     if (!current || !still.hidden || !compiled) return;
     sync(lastClock);
@@ -536,7 +536,7 @@ export function createHoverRenderer(
 
   const release = () => {
     if (!renderer) return;
-    suspend();
+    captureStill();
     const current = renderer;
     renderer = null;
     current.dispose();
@@ -548,7 +548,6 @@ export function createHoverRenderer(
 
   return {
     acquire,
-    suspend,
     release,
     mirrorBox,
     get active() {
