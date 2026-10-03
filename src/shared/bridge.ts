@@ -82,7 +82,12 @@ export function installFixtureBridge(handle: FixtureHandle): () => void {
       window.parent === window ||
       event.defaultPrevented ||
       ["Alt", "Control", "Meta", "Shift"].includes(event.key) ||
-      !(event.altKey || event.ctrlKey || event.metaKey || event.key === "Escape")
+      !(
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.key === "Escape"
+      )
     ) {
       return;
     }

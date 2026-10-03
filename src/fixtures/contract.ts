@@ -14,10 +14,7 @@ export const tierOneFixtureIds = [
 export type TierOneFixtureId = (typeof tierOneFixtureIds)[number];
 
 export type FixtureId =
-  | TierOneFixtureId
-  | "three-reactor"
-  | "three-tidal"
-  | "hover";
+  TierOneFixtureId | "three-reactor" | "three-tidal" | "hover";
 
 export type WorkloadCommand = "pause" | "reset" | "resume" | "start";
 

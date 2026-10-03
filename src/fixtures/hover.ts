@@ -58,6 +58,14 @@ const overlays: Record<
   },
 };
 
+const flagColors = { rival: "accent-alt", player: "accent" } as const;
+
+const mapMarkers = {
+  player: { color: "text-strong", size: 5 },
+  rival: { color: "accent-alt", size: 5 },
+  dumbot: { color: "text-muted", size: 3 },
+} as const;
+
 const pips = (count: number) =>
   "●".repeat(count) + "○".repeat(Math.max(0, flagsToWin - count));
 
@@ -159,31 +167,39 @@ export function createHoverFixture(
     for (let row = 0; row < arenaSize.depth; row++)
       for (let column = 0; column < arenaSize.width; column++)
         if (isWall(column, row))
-          context.fillRect(column * mapScale, row * mapScale, mapScale, mapScale);
+          context.fillRect(
+            column * mapScale,
+            row * mapScale,
+            mapScale,
+            mapScale,
+          );
   };
 
   const drawMap = () => {
     mapContext.drawImage(mapBase, 0, 0);
     const scale = mapScale / cellSize;
-    const dot = (x: number, z: number, name: Parameters<typeof fixtureColor>[1], size: number) => {
+    const dot = (
+      x: number,
+      z: number,
+      name: Parameters<typeof fixtureColor>[1],
+      size: number,
+    ) => {
       mapContext.fillStyle = fixtureColor(root, name);
-      mapContext.fillRect(x * scale - size / 2, z * scale - size / 2, size, size);
+      mapContext.fillRect(
+        x * scale - size / 2,
+        z * scale - size / 2,
+        size,
+        size,
+      );
     };
     for (const flag of world.flags)
-      if (!flag.taken)
-        dot(flag.x, flag.z, flag.owner === "rival" ? "accent-alt" : "accent", 4);
-    for (const craft of world.crafts)
-      if (craft.kind !== "player" || craft.cloak <= 0 || Math.floor(elapsed * 6) % 2)
-        dot(
-          craft.x,
-          craft.z,
-          craft.kind === "player"
-            ? "text-strong"
-            : craft.kind === "rival"
-              ? "accent-alt"
-              : "text-muted",
-          craft.kind === "dumbot" ? 3 : 5,
-        );
+      if (!flag.taken) dot(flag.x, flag.z, flagColors[flag.owner], 4);
+    const blink = Math.floor(elapsed * 6) % 2 === 1;
+    for (const craft of world.crafts) {
+      const marker = mapMarkers[craft.kind];
+      if (craft.cloak <= 0 || blink)
+        dot(craft.x, craft.z, marker.color, marker.size);
+    }
   };
 
   const updateHud = () => {
@@ -238,7 +254,9 @@ export function createHoverFixture(
   const frame = (timestamp: number) => {
     animationFrame = 0;
     if (!running || !supported || world.state !== "playing") return;
-    const dt = previous ? Math.min(0.05, Math.max(0, (timestamp - previous) / 1000)) : 0;
+    const dt = previous
+      ? Math.min(0.05, Math.max(0, (timestamp - previous) / 1000))
+      : 0;
     previous = timestamp;
     accumulator = Math.min(accumulator + dt, step * 4);
     while (accumulator >= step) {
@@ -302,7 +320,9 @@ export function createHoverFixture(
       shownState = null;
       paint();
     } catch (failure) {
-      fail(failure instanceof Error ? failure.message : "Graphics are unavailable");
+      fail(
+        failure instanceof Error ? failure.message : "Graphics are unavailable",
+      );
     }
   };
 
@@ -311,28 +331,42 @@ export function createHoverFixture(
     controls = { ...controls, [name]: value };
   };
 
-  const keyHandler = (down: boolean) => (event: KeyboardEvent) => {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-    if (down && (key === "Enter" || key === "p")) {
-      if (event.target instanceof HTMLButtonElement && key === "Enter") return;
-      event.preventDefault();
-      if (world.state === "playing") hold();
-      else play();
+  const keyName = (event: KeyboardEvent) =>
+    event.altKey || event.ctrlKey || event.metaKey
+      ? null
+      : event.key.length === 1
+        ? event.key.toLowerCase()
+        : event.key;
+  const toggle = (event: KeyboardEvent) => {
+    if (event.target instanceof HTMLButtonElement && event.key === "Enter")
       return;
-    }
-    if (down && key === "Escape") {
-      hold();
-      return;
-    }
+    event.preventDefault();
+    if (world.state === "playing") hold();
+    else play();
+  };
+  const commands: Record<string, (event: KeyboardEvent) => void> = {
+    Enter: toggle,
+    p: toggle,
+    Escape: hold,
+  };
+  const steer = (key: string, down: boolean, event: KeyboardEvent) => {
     const control = driveKeys[key] ?? itemKeys[key];
     if (!control) return;
     event.preventDefault();
     if (down && world.state !== "playing" && driveKeys[key]) play();
     setControl(control, down);
   };
-  const keyDown = keyHandler(true);
-  const keyUp = keyHandler(false);
+  const keyDown = (event: KeyboardEvent) => {
+    const key = keyName(event);
+    if (key === null) return;
+    const command = commands[key];
+    if (command) command(event);
+    else steer(key, true, event);
+  };
+  const keyUp = (event: KeyboardEvent) => {
+    const key = keyName(event);
+    if (key !== null) steer(key, false, event);
+  };
   const clearControls = (event: FocusEvent) => {
     if (!root.contains(event.relatedTarget as Node | null))
       controls = emptyControls();

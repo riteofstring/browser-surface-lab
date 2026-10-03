@@ -69,42 +69,55 @@ function fontSource(source: string): URL | null {
   }
 }
 
+const fontRules: Record<
+  keyof FixtureFont,
+  { required: boolean; valid(value: string): boolean }
+> = {
+  family: {
+    required: true,
+    valid: (value) => /^[\p{L}\p{N} ._-]{1,64}$/u.test(value),
+  },
+  source: {
+    required: true,
+    valid: (value) => value.length <= 512 && fontSource(value) !== null,
+  },
+  style: {
+    required: false,
+    valid: (value) => value === "normal" || value === "italic",
+  },
+  weight: { required: false, valid: (value) => /^[1-9]00$/u.test(value) },
+};
+
 function isFixtureFont(value: unknown): value is FixtureFont {
   if (!value || typeof value !== "object") return false;
-  const font = value as Partial<FixtureFont>;
-  return (
-    typeof font.family === "string" &&
-    /^[\p{L}\p{N} ._-]{1,64}$/u.test(font.family) &&
-    typeof font.source === "string" &&
-    font.source.length <= 512 &&
-    fontSource(font.source) !== null &&
-    (font.weight === undefined ||
-      (typeof font.weight === "string" && /^[1-9]00$/u.test(font.weight))) &&
-    (font.style === undefined ||
-      font.style === "normal" ||
-      font.style === "italic")
-  );
+  const font = value as Record<string, unknown>;
+  return Object.entries(fontRules).every(([name, rule]) => {
+    const field = font[name];
+    return field === undefined
+      ? !rule.required
+      : typeof field === "string" && rule.valid(field);
+  });
 }
 
 export function isFixtureTheme(value: unknown): value is FixtureTheme {
   if (!value || typeof value !== "object") return false;
   const theme = value as Partial<FixtureTheme>;
   if (theme.colorMode !== "dark" && theme.colorMode !== "light") return false;
-  if (
-    theme.fonts !== undefined &&
-    (!Array.isArray(theme.fonts) ||
-      theme.fonts.length > 8 ||
-      !theme.fonts.every(isFixtureFont))
-  )
+  return areFixtureFonts(theme.fonts) && areFixtureStyles(theme.styles);
+}
+
+function areFixtureFonts(fonts: unknown): boolean {
+  return (
+    fonts === undefined ||
+    (Array.isArray(fonts) && fonts.length <= 8 && fonts.every(isFixtureFont))
+  );
+}
+
+function areFixtureStyles(styles: unknown): boolean {
+  if (styles === undefined) return true;
+  if (!styles || typeof styles !== "object" || Array.isArray(styles))
     return false;
-  if (theme.styles === undefined) return true;
-  if (
-    !theme.styles ||
-    typeof theme.styles !== "object" ||
-    Array.isArray(theme.styles)
-  )
-    return false;
-  return Object.entries(theme.styles).every(([name, value]) => {
+  return Object.entries(styles).every(([name, value]) => {
     const property = styleProperty(name);
     return (
       property !== null &&

@@ -205,7 +205,10 @@ export function createHoverRenderer(
     speed: track(new THREE.RingGeometry(0.9, 1.5, 3)),
     slow: track(new THREE.CircleGeometry(1.5, 14)),
   };
-  const podMaterials = new Map<PodKind, THREE.Material & { color: THREE.Color }>();
+  const podMaterials = new Map<
+    PodKind,
+    THREE.Material & { color: THREE.Color }
+  >();
   for (const kind of Object.keys(podGeometries) as PodKind[])
     podMaterials.set(
       kind,
@@ -224,7 +227,10 @@ export function createHoverRenderer(
       ),
     );
   const pods = world.pods.map((pod) => {
-    const mesh = new THREE.Mesh(podGeometries[pod.kind], podMaterials.get(pod.kind));
+    const mesh = new THREE.Mesh(
+      podGeometries[pod.kind],
+      podMaterials.get(pod.kind),
+    );
     const flat = pod.kind === "speed" || pod.kind === "slow";
     mesh.position.set(pod.x, flat ? 0.04 : 1.1, pod.z);
     if (flat) mesh.rotation.x = -Math.PI / 2;
@@ -360,7 +366,11 @@ export function createHoverRenderer(
     camera.position.z += (targetZ - camera.position.z) * ease;
     const lift = 4.6 + (8 - reach) * 0.35 + player.y * 0.6;
     camera.position.y += (lift - camera.position.y) * ease;
-    camera.lookAt(player.x + forwardX * 4, 0.9 + player.y * 0.5, player.z + forwardZ * 4);
+    camera.lookAt(
+      player.x + forwardX * 4,
+      0.9 + player.y * 0.5,
+      player.z + forwardZ * 4,
+    );
   };
 
   const sync = (clock: number) => {
@@ -369,7 +379,8 @@ export function createHoverRenderer(
       const bob = Math.sin(clock * 4 + craft.x) * 0.06;
       body.position.set(craft.x, 0.25 + craft.y + bob, craft.z);
       body.rotation.y = -craft.heading;
-      const side = craft.vx * Math.cos(craft.heading) + craft.vz * Math.sin(craft.heading);
+      const side =
+        craft.vx * Math.cos(craft.heading) + craft.vz * Math.sin(craft.heading);
       body.rotation.z = -Math.max(-0.3, Math.min(0.3, side * 0.03));
       hull.opacity = craft.cloak > 0 ? 0.25 : 1;
       glow.visible = craft.cloak <= 0;

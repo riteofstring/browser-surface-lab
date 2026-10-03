@@ -19,7 +19,8 @@
       "scripts/**",
       "tests/**",
       "playwright.config.ts",
-      "vite.config.ts"
+      "vite.config.ts",
+      "vite.embed.config.ts"
     ]
   },
   "quality": {
@@ -53,6 +54,7 @@
         "index.html",
         "workload-manifest.json",
         "vite.config.ts",
+        "vite.embed.config.ts",
         "playwright.config.ts",
         "tsconfig.json",
         "package.json",
@@ -112,6 +114,11 @@
         "paths": ["scripts/protected-inputs-lib.test.mjs"],
         "module": "lab",
         "focusedSuite": "lab-protected-inputs"
+      },
+      {
+        "paths": ["tests/hover.spec.ts"],
+        "module": "lab",
+        "focusedSuite": "lab-hover"
       }
     ],
     "suites": [
@@ -144,6 +151,17 @@
         "timeoutSeconds": 120
       },
       {
+        "name": "lab-hover",
+        "kind": "browser",
+        "scope": "module",
+        "modules": ["lab"],
+        "cost": "quick",
+        "argv": ["pnpm", "exec", "playwright", "test", "tests/hover.spec.ts"],
+        "paths": ["tests/hover.spec.ts"],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 300
+      },
+      {
         "name": "lab-browser",
         "kind": "browser",
         "scope": "repository",
@@ -153,7 +171,8 @@
           "tests/canvas-capture.spec.ts",
           "tests/theme.spec.ts",
           "tests/three-scenes.spec.ts",
-          "tests/tier-one-fixtures.spec.ts"
+          "tests/tier-one-fixtures.spec.ts",
+          "tests/hover.spec.ts"
         ],
         "runOn": ["full"],
         "timeoutSeconds": 900

@@ -100,7 +100,13 @@ test("framed fixtures forward unhandled shortcut keys and loads same-origin host
   await page.keyboard.press("Alt+ArrowLeft");
   await page.keyboard.press("Escape");
   const keys = await page.evaluate(() =>
-    ((window as Window & { messages?: { type?: string; key?: string; altKey?: boolean }[] }).messages ?? [])
+    (
+      (
+        window as Window & {
+          messages?: { type?: string; key?: string; altKey?: boolean }[];
+        }
+      ).messages ?? []
+    )
       .filter((message) => message?.type === "key")
       .map((message) => `${message.altKey ? "Alt+" : ""}${message.key}`),
   );
@@ -137,5 +143,8 @@ test("theme rejects cross-origin font sources", async ({ page }) => {
       }),
   );
   expect(applied).toBe(false);
-  await expect(page.locator("html")).toHaveAttribute("data-color-mode", "light");
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-color-mode",
+    "light",
+  );
 });
