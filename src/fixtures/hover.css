@@ -243,99 +243,94 @@
   display: none;
 }
 @media (pointer: coarse) {
-  .hover {
-    --hover-touch-height: 132px;
-  }
-  .hover-viewport,
-  .hover-hud,
-  .hover-overlay {
-    bottom: var(--hover-touch-height);
-  }
   .hover-help,
-  .hover-items {
+  .hover-items,
+  .hover-gauges {
     display: none;
   }
   .hover-map {
+    top: 76px;
     right: 10px;
+    bottom: auto;
     left: auto;
     width: 84px;
     height: 84px;
     transform: none;
   }
-  .hover-gauges {
-    top: 76px;
-    right: 10px;
-    bottom: auto;
-    min-width: 0;
-    padding: 4px 8px;
-  }
-  .hover-speed {
-    display: none;
-  }
-  .hover-gauges:has(span:empty) {
-    display: none;
-  }
-  .hover-touch {
+  .hover[data-state="playing"] .hover-touch {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: grid;
-    height: var(--hover-touch-height);
-    grid-template-areas:
-      "items items"
-      "steer drive";
-    grid-template-rows: 44px minmax(0, 1fr);
-    gap: 8px;
-    padding: 8px 10px 10px;
-    border-top: 1px solid var(--lab-border);
-    background: var(--lab-surface);
-  }
-  .hover-touch-group {
+    inset: auto 0 0;
     display: flex;
-    gap: 8px;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 18px 18px;
+    pointer-events: none;
   }
-  .hover-touch-group:first-child {
-    grid-area: steer;
-  }
-  .hover-touch-group:last-child {
-    grid-area: drive;
-    justify-content: flex-end;
-  }
-  .hover-touch-items {
-    grid-area: items;
-    justify-content: center;
-  }
-  .hover-touch button {
-    min-width: 0;
-    flex: 0 1 76px;
-    border: 1px solid var(--lab-border);
-    border-radius: var(--lab-radius);
-    color: var(--lab-text-strong);
-    background: var(--lab-surface-raised);
-    font-family: var(--lab-font-mono);
-    font-size: 22px;
+  .hover-stick,
+  .hover-pad button {
+    border: 1px solid rgb(255 255 255 / 0.35);
+    color: rgb(255 255 255 / 0.85);
+    background: rgb(255 255 255 / 0.12);
+    backdrop-filter: blur(2px);
     touch-action: none;
     -webkit-touch-callout: none;
+    pointer-events: auto;
   }
-  .hover-touch-items button {
-    display: flex;
-    flex: 1 1 0;
-    max-width: 120px;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+  .hover-stick {
+    position: relative;
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+  }
+  .hover-stick i {
+    position: absolute;
+    top: calc(50% - 28px);
+    left: calc(50% - 28px);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.35);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.5);
+  }
+  .hover-pad {
+    display: grid;
+    grid-template-areas:
+      ". jump ."
+      "barrier . cloak"
+      ". pause .";
+    grid-template-columns: repeat(3, 54px);
+    grid-template-rows: repeat(3, 54px);
+    gap: 2px;
+  }
+  .hover-pad button {
+    display: grid;
+    place-content: center;
+    gap: 1px;
+    padding: 0;
+    border-radius: 50%;
     font-family: var(--lab-font-family);
-    font-size: var(--lab-font-size-small);
+    font-size: var(--lab-font-size-tiny);
   }
-  .hover-touch-items b {
-    color: var(--lab-positive);
+  .hover-pad b {
+    color: rgb(141 255 90 / 0.95);
     font-family: var(--lab-font-mono);
     font-weight: var(--lab-font-weight);
   }
-  .hover-touch button:active {
-    border-color: var(--lab-accent);
-    background: color-mix(in srgb, var(--lab-accent) 25%, var(--lab-surface));
+  .hover-pad-jump {
+    grid-area: jump;
+  }
+  .hover-pad-barrier {
+    grid-area: barrier;
+  }
+  .hover-pad-cloak {
+    grid-area: cloak;
+  }
+  .hover-pad-pause {
+    grid-area: pause;
+    font-size: 12px;
+  }
+  .hover-pad button:active {
+    background: rgb(255 255 255 / 0.3);
   }
 }
 .hover-error {

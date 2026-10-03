@@ -40,7 +40,8 @@ Green floor traps fling you; red ones hold you for three seconds. The HUD
 follows the original: flags, rear-view mirror, score, items, a radar that
 reveals only explored ground, and speed. `maze=castle|city|sewer` picks the
 first maze, like the original's Maze Type option, and M mutes the synthesised
-sounds. The mazes and textures are new and procedural, not the original's.
+sounds. On touch screens a translucent joystick on the left steers and a
+D-pad on the right holds spring, wall, cloak and pause, shown only in play. The mazes and textures are new and procedural, not the original's.
 The world keeps Hover!'s own colours; the theme styles the HUD and its fonts.
 It renders only while a game is in play, caps the pixel ratio at 1.5, and when
 paused by its host keeps a still of the last frame and releases its WebGL

@@ -163,3 +163,50 @@ test("theme rejects cross-origin font sources", async ({ page }) => {
     "light",
   );
 });
+
+test.describe("on a touch screen", () => {
+  test.use({
+    hasTouch: true,
+    isMobile: true,
+    viewport: { width: 400, height: 760 },
+  });
+
+  test("hover drives with the joystick and springs from the pad, shown only in play", async ({
+    page,
+  }) => {
+    await page.goto("/fixture.html?fixture=hover&embedding=surface");
+    const stick = page.locator(".hover-stick");
+    await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+    await expect(stick).toBeHidden();
+    await page.getByRole("button", { name: "Start" }).tap();
+    await expect(stick).toBeVisible();
+    const push = (type: string, dy: number) =>
+      stick.evaluate(
+        (element, { type, dy }) => {
+          const bounds = element.getBoundingClientRect();
+          element.dispatchEvent(
+            new PointerEvent(type, {
+              pointerId: 7,
+              pointerType: "touch",
+              clientX: bounds.left + bounds.width / 2,
+              clientY: bounds.top + bounds.height / 2 + dy * bounds.height,
+              bubbles: true,
+            }),
+          );
+        },
+        { type, dy },
+      );
+    await push("pointerdown", -0.45);
+    await expect
+      .poll(async () => (await snapshot(page)).counters.playerFlags)
+      .toBe(1);
+    await push("pointerup", 0);
+    const spring = page.locator('.hover-pad [data-item="spring"]');
+    await expect(spring).toHaveText("×1");
+    await page.locator(".hover-pad-jump").tap();
+    await expect(spring).toHaveText("×0");
+    await page.locator(".hover-pad-pause").tap();
+    expect((await snapshot(page)).details.state).toBe("paused");
+    await expect(stick).toBeHidden();
+  });
+});

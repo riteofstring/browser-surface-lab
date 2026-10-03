@@ -4,6 +4,7 @@ import { observeFixtureTheme } from "../shared/theme";
 import { createHoverRenderer, type HoverRenderer } from "./hover-render";
 import { createHud, hudMarkup, overlayFor } from "./hover-hud";
 import { createHoverSound } from "./hover-sound";
+import { bindTouchControls, touchMarkup } from "./hover-touch";
 import { mazes } from "./hover-mazes";
 import {
   emptyControls,
@@ -29,19 +30,6 @@ const itemKeys: Record<string, keyof Controls> = {
   d: "cloak",
 };
 
-const touchButton = (control: keyof Controls, label: string, face: string) =>
-  `<button type="button" data-control="${control}" aria-label="${label}">${face}</button>`;
-
-const touchItem = (control: keyof Controls, item: string, label: string) =>
-  touchButton(control, label, `${label}<b data-item="${item}"></b>`);
-
-// Steering under the left thumb, thrust under the right, items above.
-const touchBar = `<div class="hover-touch">
-  <div class="hover-touch-group">${touchButton("left", "Turn left", "◀")}${touchButton("right", "Turn right", "▶")}</div>
-  <div class="hover-touch-group hover-touch-items">${touchItem("jump", "spring", "Spring")}${touchItem("barrier", "barrier", "Wall")}${touchItem("cloak", "cloak", "Cloak")}</div>
-  <div class="hover-touch-group">${touchButton("reverse", "Reverse", "▼")}${touchButton("thrust", "Thrust", "▲")}</div>
-</div>`;
-
 // Like Hover!'s Maze Type option: `maze=city` starts the cycle there.
 const firstRound = Math.max(
   0,
@@ -49,6 +37,8 @@ const firstRound = Math.max(
     (maze) => maze.name === new URLSearchParams(location.search).get("maze"),
   ),
 );
+
+const items = new Set<keyof Controls>(["jump", "barrier", "cloak"]);
 
 const readBest = () => {
   try {
@@ -85,7 +75,7 @@ export function createHoverFixture(
     <button type="button" class="hover-action"></button>
     <p class="hover-help">Arrows drive · A/Space spring · S wall · D cloak · Enter pause · M mute</p>
   </div>
-  ${touchBar}
+  ${touchMarkup}
   <div class="hover-error" hidden><p role="alert"></p><button type="button">Retry graphics</button></div>`;
   const viewport = root.querySelector<HTMLElement>(".hover-viewport")!;
   const overlay = root.querySelector<HTMLElement>(".hover-overlay")!;
@@ -112,6 +102,7 @@ export function createHoverFixture(
   let mapAge = Infinity;
   let shownState: GameState | null = null;
   let best = readBest();
+  let tapped: Partial<Controls> = {};
 
   const fail = (text: string) => {
     supported = false;
@@ -171,7 +162,9 @@ export function createHoverFixture(
   const advance = (dt: number) => {
     accumulator = Math.min(accumulator + dt, step * 4);
     while (accumulator >= step) {
-      world.step(step, controls);
+      // A tap shorter than a step still counts once.
+      world.step(step, { ...controls, ...tapped });
+      tapped = {};
       accumulator -= step;
     }
     elapsed += dt;
@@ -256,6 +249,7 @@ export function createHoverFixture(
   };
 
   const setControl = (name: keyof Controls, value: boolean) => {
+    if (value && items.has(name)) tapped[name] = true;
     if (controls[name] === value) return;
     controls = { ...controls, [name]: value };
   };
@@ -308,18 +302,6 @@ export function createHoverFixture(
       controls = emptyControls();
   };
   const pointerFocus = () => root.focus({ preventScroll: true });
-  const touch = (event: PointerEvent) => {
-    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
-      "[data-control]",
-    );
-    if (!button) return;
-    event.preventDefault();
-    const down = event.type === "pointerdown";
-    if (down && event.isTrusted) button.setPointerCapture(event.pointerId);
-    if (down && world.state !== "playing") play();
-    setControl(button.dataset.control as keyof Controls, down);
-  };
-  const touchPad = root.querySelector<HTMLElement>(".hover-touch")!;
   const visibility = () => {
     if (document.hidden) hold();
   };
@@ -332,9 +314,14 @@ export function createHoverFixture(
   document.addEventListener("keyup", keyUp);
   root.addEventListener("focusout", clearControls);
   viewport.addEventListener("pointerdown", pointerFocus);
-  touchPad.addEventListener("pointerdown", touch);
-  touchPad.addEventListener("pointerup", touch);
-  touchPad.addEventListener("pointercancel", touch);
+  const unbindTouch = bindTouchControls(
+    root,
+    setControl,
+    () => {
+      if (world.state !== "playing") play();
+    },
+    hold,
+  );
   action.addEventListener("click", play);
   retry.addEventListener("click", initialize);
   document.addEventListener("visibilitychange", visibility);
@@ -380,6 +367,7 @@ export function createHoverFixture(
       document.removeEventListener("keydown", keyDown);
       document.removeEventListener("keyup", keyUp);
       sound.close();
+      unbindTouch();
       view?.dispose();
       view = null;
       container.replaceChildren();
