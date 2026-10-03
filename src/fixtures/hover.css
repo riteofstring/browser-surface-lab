@@ -24,6 +24,9 @@
   width: 100%;
   height: 100%;
 }
+.hover-still[hidden] {
+  display: none;
+}
 .hover-hud {
   position: absolute;
   inset: 0;

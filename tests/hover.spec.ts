@@ -46,6 +46,16 @@ test("hover drives to a flag, pauses with its pixels and resumes on request", as
   await expect
     .poll(async () => (await snapshot(page)).counters.steps)
     .toBeGreaterThan(paused.counters.steps!);
+  // The paused still gives way to the live view again.
+  await expect(page.locator(".hover-still")).toBeHidden();
+  const canvas = page.locator(".hover-canvas canvas");
+  await expect(canvas).toBeVisible();
+  await page.keyboard.down("ArrowLeft");
+  const before = await page.locator(".hover-viewport").screenshot();
+  await page.waitForTimeout(400);
+  const after = await page.locator(".hover-viewport").screenshot();
+  await page.keyboard.up("ArrowLeft");
+  expect(after.equals(before)).toBe(false);
   expect((await snapshot(page)).counters.playerFlags).toBe(1);
 });
 
