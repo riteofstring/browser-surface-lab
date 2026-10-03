@@ -27,16 +27,20 @@
 .hover-still[hidden] {
   display: none;
 }
-/* A host's tint colours the 3D view (mirror included) but not the HUD, and
-   keeps enough of the scene's own hue to tell the teams apart. */
+/* While paused, or held by its host, a host's tint washes the frozen 3D
+   view (not the HUD); play is always in the game's own colours. */
 .hover-viewport::after {
   position: absolute;
   inset: 0;
   background: var(--lab-tint);
   content: "";
   mix-blend-mode: color;
-  opacity: 0.6;
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.25s;
+}
+.hover[data-held] .hover-viewport::after {
+  opacity: 0.6;
 }
 .hover-hud {
   position: absolute;

@@ -127,8 +127,8 @@ The reply has `type: "theme-applied"` and the same `requestId`.
 
 - Color styles: `page`, `surface`, `surface-raised`, `surface-sunken`, `text`,
   `text-strong`, `text-muted`, `text-subtle`, `border`, `accent`, `accent-alt`,
-  `positive`, `warning`, `focus`, and `tint` (transparent by default; a
-  fixture may wash its scene in it, as `hover` does).
+  `positive`, `warning`, `focus`, and `tint` (transparent by default; `hover`
+  washes its frozen scene in it while paused).
 - Typography and shape styles: `font-family`, `font-mono`, `font-size`,
   `font-size-heading`, `font-size-small`, `font-size-label`, `font-size-tiny`,
   `font-weight`, `font-weight-heading`, `line-height`, `line-height-heading`,

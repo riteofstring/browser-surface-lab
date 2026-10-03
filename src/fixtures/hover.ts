@@ -133,6 +133,7 @@ export function createHoverFixture(
   };
 
   const updateHud = () => {
+    root.toggleAttribute("data-held", !running || world.state === "paused");
     hud.update(world, elapsed, view?.mirrorBox() ?? null);
     showOverlay();
   };
@@ -374,6 +375,7 @@ export function createHoverFixture(
       hold();
       stopLoop();
       view?.suspend();
+      updateHud();
       // Give the graphics context back only after a while away.
       window.clearTimeout(releaseTimer);
       releaseTimer = window.setTimeout(() => view?.release(), 30_000);

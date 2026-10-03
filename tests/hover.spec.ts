@@ -231,24 +231,27 @@ test("hover loaded with autostart=0 creates no graphics until resumed", async ({
   expect((await snapshot(page)).counters.frames).toBeGreaterThan(0);
 });
 
-test("a host tint colours the 3D view overlay, and none by default", async ({
+test("a host tint washes the view only while the game is paused", async ({
   page,
 }) => {
   const theme = { colorMode: "dark", styles: { tint: "#8dff5a" } };
   await page.goto(
     `/fixture.html?fixture=hover&embedding=surface&theme=${encodeURIComponent(JSON.stringify(theme))}`,
   );
-  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
-  const tint = (selector: string, pseudo: string | null) =>
-    page
-      .locator(selector)
-      .evaluate(
-        (element, pseudo) => getComputedStyle(element, pseudo).backgroundColor,
-        pseudo,
-      );
-  expect(await tint(".hover-viewport", "::after")).toBe("rgb(141, 255, 90)");
-  await page.goto("/fixture.html?fixture=hover&embedding=surface");
-  expect(await tint(".hover-viewport", "::after")).toBe("rgba(0, 0, 0, 0)");
+  const wash = () =>
+    page.locator(".hover-viewport").evaluate((element) => {
+      const style = getComputedStyle(element, "::after");
+      return { color: style.backgroundColor, opacity: style.opacity };
+    });
+  await page.getByRole("button", { name: "Start" }).click();
+  await expect.poll(async () => (await wash()).opacity).toBe("0");
+  expect((await wash()).color).toBe("rgb(141, 255, 90)");
+  await page.keyboard.press("p");
+  await expect.poll(async () => (await wash()).opacity).toBe("0.6");
+  await page.keyboard.press("p");
+  await expect.poll(async () => (await wash()).opacity).toBe("0");
+  await page.evaluate(() => window.__surfaceLab!.command("pause"));
+  await expect.poll(async () => (await wash()).opacity).toBe("0.6");
 });
 
 test("hover.html serves the game alone with the same bridge and options", async ({
