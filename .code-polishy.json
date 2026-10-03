@@ -119,6 +119,11 @@
         "paths": ["tests/hover.spec.ts"],
         "module": "lab",
         "focusedSuite": "lab-hover"
+      },
+      {
+        "paths": ["tests/hover-rules.unit.ts"],
+        "module": "lab",
+        "focusedSuite": "lab-hover-rules"
       }
     ],
     "suites": [
@@ -138,6 +143,17 @@
         "paths": ["tests/tier-one-fixtures.spec.ts"],
         "runOn": ["focused", "recommended", "full"],
         "timeoutSeconds": 300
+      },
+      {
+        "name": "lab-hover-rules",
+        "kind": "unit",
+        "scope": "module",
+        "modules": ["lab"],
+        "cost": "quick",
+        "argv": ["node", "--test", "tests/hover-rules.unit.ts"],
+        "paths": ["tests/hover-rules.unit.ts"],
+        "runOn": ["focused", "recommended", "full"],
+        "timeoutSeconds": 120
       },
       {
         "name": "lab-protected-inputs",

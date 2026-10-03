@@ -1,10 +1,10 @@
 {
-  "aggregate": "be6203e20417fa71ffa4541900c5e3f39d77183d613fb1dced61fe0d204f22de",
+  "aggregate": "18950536d1808db4a5b3fee0d5a3cb7d7b9f0b91d2254c7b0d8b16d5d4d58b44",
   "entries": [
     {
       "path": ".code-polishy.json",
-      "sha256": "bd673d629ba47bd34249f6eb8bc6104f0bfb86f739834bbf3ccf0d155028261a",
-      "size": 7676
+      "sha256": "6eef55a152d669103810f4e5dd41b91fbae269afc7c1e1042957b6420ddf2ed1",
+      "size": 8160
     },
     {
       "path": ".code-polishy.lock.json",
@@ -73,8 +73,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "9197e9759c434f34fc8086b91c429da7d596d6fadbd4cc983627419e0437ff92",
-      "size": 1210
+      "sha256": "2a872fb249efe585a92e1aef452d1ca76d181d38566e693261c0d7360251adfe",
+      "size": 1269
     },
     {
       "path": "playwright.config.ts",
@@ -98,8 +98,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "a27895a58c2d7cb620b2eaf49da7cbe416dbbde81200b7741e4a2907b43755ac",
-      "size": 8524
+      "sha256": "e0f047a40ff8bba58985fccdb5df27ac56c17671de4ba6c70e746c383b8c4ba9",
+      "size": 9614
     },
     {
       "path": "scripts/freeze-protected-inputs.mjs",
@@ -157,19 +157,29 @@
       "size": 4143
     },
     {
+      "path": "src/fixtures/hover-arena.ts",
+      "sha256": "654a92042d298e2a1c17f50af3250cdd0f79d636fbe917386ee87bcf18733f80",
+      "size": 7532
+    },
+    {
       "path": "src/fixtures/hover-hud.ts",
-      "sha256": "19e7e3e646dffbaa0cf066b9dd0c08327f7490940259f643f000db3a26d194e3",
-      "size": 7795
+      "sha256": "ae9d602d395178147e9850f621680d66924202af9088ae4dbe13ed721ff939ad",
+      "size": 8491
+    },
+    {
+      "path": "src/fixtures/hover-icons.ts",
+      "sha256": "e6b75fa940801198b3bec5c66326fc8296cbc5209bdb01d73bd67e24a9cce8dc",
+      "size": 4088
     },
     {
       "path": "src/fixtures/hover-mazes.ts",
-      "sha256": "9d2c51d54af151885b7720f33d2865f4a40dd43849fc3a93b961d36c6f8fb3af",
-      "size": 5963
+      "sha256": "e908af28c8cf232dd84dea49208a95fffe6f72a7d43853a3baa21636dd45e277",
+      "size": 6010
     },
     {
       "path": "src/fixtures/hover-render.ts",
-      "sha256": "bdec91f87c50bc4454cb660939489bd49d237a8f39acbdefd6f48bd303ed1372",
-      "size": 18365
+      "sha256": "3472cc5b6eb977d91c9be16f6de0ad1997602ca15144e6e024692c02edbe8d28",
+      "size": 18667
     },
     {
       "path": "src/fixtures/hover-sound.ts",
@@ -188,18 +198,18 @@
     },
     {
       "path": "src/fixtures/hover-world.ts",
-      "sha256": "d36261e2811b430021850cff56a13402e7097c82756da0beb5a10d0f45b4c4fe",
-      "size": 27880
+      "sha256": "b41d4ff164ab39457a5252678259b82065c408f8de83d796530f00902a80bc08",
+      "size": 29016
     },
     {
       "path": "src/fixtures/hover.css",
-      "sha256": "912cb17fb7fdac416ddde246b1cc543406de56d5190d1c8992b36fafd524f1df",
-      "size": 7442
+      "sha256": "cd0733664e125c32fa0de76c633f3954d77da6506301a9737986344a5cf1db12",
+      "size": 7470
     },
     {
       "path": "src/fixtures/hover.ts",
-      "sha256": "1475608e9dce161c3e746ccbfd58ce2dacfe9d21803cd433caee93ccc12fa2fa",
-      "size": 11775
+      "sha256": "30e1ada0059823d33ba54f42a7640f8eec1f2f7998536a3b2120e11b8a52dc67",
+      "size": 12353
     },
     {
       "path": "src/fixtures/lifecycle.ts",
@@ -287,9 +297,14 @@
       "size": 8834
     },
     {
+      "path": "tests/hover-rules.unit.ts",
+      "sha256": "2384c5ee6b4fb5c20efe90e62618283666638644ab5098ec598cfa54955eb7f7",
+      "size": 7576
+    },
+    {
       "path": "tests/hover.spec.ts",
-      "sha256": "6aeb7d7860dff8e7a00d35269cd88e3a447356d98a2450bac6d0863ed4e9ec6a",
-      "size": 7992
+      "sha256": "a86fbb2fa495cfcbd93dc81f8cbc8ea45043d9df55caf42862bd30d70a95a8e8",
+      "size": 8039
     },
     {
       "path": "tests/theme.spec.ts",
@@ -308,8 +323,8 @@
     },
     {
       "path": "tsconfig.json",
-      "sha256": "6994fc61b4f0a458dd1c2de085f6ac5f0d90a1ac9c229d6d148548c3f71ac3e7",
-      "size": 689
+      "sha256": "c4c8236767b5ca5f445a5564daafedfb7098a6a0dcb67b54de9d5144e48f9a6f",
+      "size": 729
     },
     {
       "path": "vite.config.ts",

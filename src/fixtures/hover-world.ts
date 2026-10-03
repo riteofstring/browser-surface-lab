@@ -1,12 +1,23 @@
-import { mazes, type Maze } from "./hover-mazes";
+import {
+  Arena,
+  cellSize,
+  mulberry32,
+  placeFlags,
+  stepUp,
+  tierHeight,
+  type Cell,
+  type Point,
+} from "./hover-arena.ts";
+import { mazes } from "./hover-mazes.ts";
 
-export const cellSize = 4;
+export { cellSize, tierHeight };
 export const wallHeight = 4.5;
-export const tierHeight = 2;
 export const barrierHeight = 1.3;
 const craftRadius = 1.1;
-const stepUp = 0.6;
 const revealRadius = 3;
+/** Closing speed at which a ram knocks a carried flag loose. */
+export const stealSpeed = 7;
+const sightCells = 7;
 
 export type PodKind =
   | "spring"
@@ -17,13 +28,11 @@ export type PodKind =
   | "shield"
   | "eraser"
   | "calm"
-  | "thief"
   | "random";
-type TrapKind = "fling" | "hold";
+type TileKind = "push" | "stop" | "return";
 export type CraftKind = "player" | "seeker" | "hunter";
 export type GameState = "ready" | "playing" | "paused" | "cleared" | "lost";
 type Team = "blue" | "red";
-type Cell = { column: number; row: number };
 
 export interface Craft {
   boost: number;
@@ -35,7 +44,7 @@ export interface Craft {
   mass: number;
   shield: number;
   slow: number;
-  trapCooldown: number;
+  tileCooldown: number;
   vx: number;
   vy: number;
   vz: number;
@@ -44,35 +53,33 @@ export interface Craft {
   z: number;
 }
 
+/** A flag stands on its stand, rides on the craft that took it, or lies loose
+ * where a ram or a tile knocked it. */
 interface Flag {
+  carrier: Craft | null;
+  home: Point;
+  loose: boolean;
   owner: Team;
-  taken: boolean;
+  settle: number;
   x: number;
   y: number;
   z: number;
 }
 
-interface Pod {
+interface Pod extends Point {
   kind: PodKind;
   respawn: number;
-  x: number;
-  y: number;
-  z: number;
 }
 
-interface Trap {
-  kind: TrapKind;
-  x: number;
-  y: number;
-  z: number;
+interface Tile extends Point {
+  dx: number;
+  dz: number;
+  kind: TileKind;
 }
 
-interface Barrier {
+interface Barrier extends Point {
   age: number;
   heading: number;
-  x: number;
-  y: number;
-  z: number;
 }
 
 interface Box {
@@ -96,6 +103,8 @@ export interface Controls {
 interface Pilot {
   craft: Craft;
   field: Int16Array | null;
+  fieldVersion: number;
+  fleeing: number;
   goal: number;
   replan: number;
   resting: number;
@@ -123,10 +132,16 @@ const podKinds: Record<string, PodKind> = {
   s: "shield",
   m: "eraser",
   z: "calm",
-  t: "thief",
   "?": "random",
 };
-const trapKinds: Record<string, TrapKind> = { g: "fling", x: "hold" };
+const tileKinds: Record<string, [TileKind, number, number]> = {
+  u: ["push", 0, -1],
+  d: ["push", 0, 1],
+  l: ["push", -1, 0],
+  r: ["push", 1, 0],
+  x: ["stop", 0, 0],
+  f: ["return", 0, 0],
+};
 const randomPods: readonly PodKind[] = [
   "spring",
   "barrier",
@@ -136,11 +151,9 @@ const randomPods: readonly PodKind[] = [
   "shield",
   "eraser",
   "calm",
-  "thief",
 ];
-const harmful = new Set<PodKind>(["red", "eraser", "thief"]);
-const blueFlags = "123456";
-const redFlags = "!@$%&*";
+/** Power-downs, which a shield turns away. */
+const harmful = new Set<PodKind>(["red", "eraser"]);
 
 const tuning: Record<CraftKind, { thrust: number; top: number }> = {
   player: { thrust: 30, top: 17 },
@@ -148,158 +161,11 @@ const tuning: Record<CraftKind, { thrust: number; top: number }> = {
   hunter: { thrust: 18, top: 10.5 },
 };
 
-const neighbours = [
-  ["E", 1, 0],
-  ["W", -1, 0],
-  ["S", 0, 1],
-  ["N", 0, -1],
-] as const;
-type Side = (typeof neighbours)[number][0];
-const opposite: Record<Side, Side> = { E: "W", W: "E", S: "N", N: "S" };
-
-const rampEdges: Record<string, Partial<Record<Side, number>>> = {
-  ">": { W: 0, E: tierHeight },
-  "<": { E: 0, W: tierHeight },
-  v: { N: 0, S: tierHeight },
-  "^": { S: 0, N: tierHeight },
-};
-
 const wrapAngle = (angle: number) =>
   Math.atan2(Math.sin(angle), Math.cos(angle));
 
-function mulberry32(seed: number) {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let value = state;
-    value = Math.imul(value ^ (value >>> 15), value | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** The maze's solid geometry: tiles, heights and the moves between cells. */
-export class Arena {
-  readonly width: number;
-  readonly depth: number;
-  private readonly forward: number[][];
-  private readonly backward: number[][];
-
-  readonly maze: Maze;
-
-  constructor(maze: Maze) {
-    this.maze = maze;
-    this.width = maze.tiles[0]!.length;
-    this.depth = maze.tiles.length;
-    this.forward = Array.from({ length: this.width * this.depth }, () => []);
-    this.backward = Array.from({ length: this.width * this.depth }, () => []);
-    for (let row = 0; row < this.depth; row++)
-      for (let column = 0; column < this.width; column++)
-        this.link(column, row);
-  }
-
-  tile(column: number, row: number): string {
-    return this.maze.tiles[row]?.[column] ?? "#";
-  }
-
-  index(column: number, row: number): number {
-    return row * this.width + column;
-  }
-
-  cellOf(index: number): Cell {
-    return { column: index % this.width, row: Math.floor(index / this.width) };
-  }
-
-  cellAt(x: number, z: number): Cell {
-    return { column: Math.floor(x / cellSize), row: Math.floor(z / cellSize) };
-  }
-
-  center(column: number, row: number) {
-    return {
-      x: (column + 0.5) * cellSize,
-      y: this.tile(column, row) === "=" ? tierHeight : 0,
-      z: (row + 0.5) * cellSize,
-    };
-  }
-
-  isWall(column: number, row: number): boolean {
-    return this.tile(column, row) === "#";
-  }
-
-  /** Floor height under a point; ramps rise across their cell. */
-  heightAt(x: number, z: number): number {
-    const { column, row } = this.cellAt(x, z);
-    const tile = this.tile(column, row);
-    if (tile === "=") return tierHeight;
-    const u = x / cellSize - column;
-    const v = z / cellSize - row;
-    const along: Record<string, number> = { ">": u, "<": 1 - u, v, "^": 1 - v };
-    const part = along[tile];
-    return part === undefined ? 0 : Math.max(0, Math.min(1, part)) * tierHeight;
-  }
-
-  private edge(column: number, row: number, side: Side): number | null {
-    const tile = this.tile(column, row);
-    if (tile === "#") return null;
-    if (tile === "=") return tierHeight;
-    if (tile === ".") return 0;
-    return rampEdges[tile]?.[side] ?? null;
-  }
-
-  private link(column: number, row: number): void {
-    for (const [side, dx, dz] of neighbours) {
-      const from = this.edge(column, row, side);
-      const to = this.edge(column + dx, row + dz, opposite[side]);
-      if (from === null || to === null || to > from + stepUp) continue;
-      const a = this.index(column, row);
-      const b = this.index(column + dx, row + dz);
-      this.forward[a]!.push(b);
-      this.backward[b]!.push(a);
-    }
-  }
-
-  next(index: number): readonly number[] {
-    return this.forward[index] ?? [];
-  }
-
-  /** Steps from every cell to `goal`, following moves a hovercraft can make. */
-  distanceTo(goal: number): Int16Array {
-    const field = new Int16Array(this.width * this.depth).fill(-1);
-    const queue = [goal];
-    field[goal] = 0;
-    for (let head = 0; head < queue.length; head++) {
-      const index = queue[head]!;
-      for (const previous of this.backward[index]!) {
-        if (field[previous] !== -1) continue;
-        field[previous] = field[index]! + 1;
-        queue.push(previous);
-      }
-    }
-    return field;
-  }
-
-  /** Whether walls leave a straight line of sight between two points. */
-  clearLine(ax: number, az: number, bx: number, bz: number): boolean {
-    const samples = Math.ceil(Math.hypot(bx - ax, bz - az) / (cellSize / 3));
-    for (let step = 1; step < samples; step++) {
-      const t = step / samples;
-      const { column, row } = this.cellAt(
-        ax + (bx - ax) * t,
-        az + (bz - az) * t,
-      );
-      if (this.isWall(column, row)) return false;
-    }
-    return true;
-  }
-}
-
-const newCraft = (
-  arena: Arena,
-  kind: CraftKind,
-  column: number,
-  row: number,
-): Craft => ({
-  ...arena.center(column, row),
+const newCraft = (arena: Arena, kind: CraftKind, cell: Cell): Craft => ({
+  ...arena.center(cell.column, cell.row),
   boost: 0,
   cloak: 0,
   fling: 0,
@@ -309,19 +175,11 @@ const newCraft = (
   mass: kind === "hunter" ? 2.2 : 1,
   shield: 0,
   slow: 0,
-  trapCooldown: 0,
+  tileCooldown: 0,
   vx: 0,
   vy: 0,
   vz: 0,
 });
-
-function limitSpeed(craft: Craft, top: number): void {
-  const limit = top * (craft.boost > 0 ? 1.5 : 1) * (craft.slow > 0 ? 0.45 : 1);
-  const speed = Math.hypot(craft.vx, craft.vz);
-  if (speed <= limit) return;
-  craft.vx *= limit / speed;
-  craft.vz *= limit / speed;
-}
 
 const steering = (controls: Controls) =>
   (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
@@ -342,6 +200,14 @@ function glide(craft: Craft, airborne: boolean, dt: number): void {
   craft.vz = (along * forwardZ + sideZ * grip) * drag;
 }
 
+function limitSpeed(craft: Craft, top: number): void {
+  const limit = top * (craft.boost > 0 ? 1.5 : 1) * (craft.slow > 0 ? 0.45 : 1);
+  const speed = Math.hypot(craft.vx, craft.vz);
+  if (speed <= limit) return;
+  craft.vx *= limit / speed;
+  craft.vz *= limit / speed;
+}
+
 function tick(craft: Craft, dt: number): void {
   craft.boost = Math.max(0, craft.boost - dt);
   craft.slow = Math.max(0, craft.slow - dt);
@@ -349,16 +215,35 @@ function tick(craft: Craft, dt: number): void {
   craft.shield = Math.max(0, craft.shield - dt);
   craft.held = Math.max(0, craft.held - dt);
   craft.fling = Math.max(0, craft.fling - dt);
-  craft.trapCooldown = Math.max(0, craft.trapCooldown - dt);
+  craft.tileCooldown = Math.max(0, craft.tileCooldown - dt);
 }
 
-/** Flags, drones, pods and traps for one round in one maze. */
+/** Cells a dropped wall covers, for drones planning around it. */
+function barrierCells(arena: Arena, barrier: Barrier): number[] {
+  const cells = new Set<number>();
+  for (const along of [-2, -1, 0, 1, 2]) {
+    const x = barrier.x + Math.cos(barrier.heading) * along;
+    const z = barrier.z + Math.sin(barrier.heading) * along;
+    cells.add(arena.indexAt({ x, z }));
+  }
+  return [...cells];
+}
+
+interface WorldOptions {
+  round?: number;
+  score?: number;
+  seed?: number;
+}
+
+/** Flags, drones, pods and tiles for one round in one maze. */
 export class HoverWorld {
   readonly arena: Arena;
+  readonly round: number;
+  readonly seed: number;
   readonly crafts: Craft[] = [];
   readonly flags: Flag[] = [];
   readonly pods: Pod[] = [];
-  readonly traps: Trap[] = [];
+  readonly tiles: Tile[] = [];
   readonly barriers: Barrier[] = [];
   readonly inventory = { spring: 0, barrier: 0, cloak: 0 };
   readonly explored: Uint8Array;
@@ -368,36 +253,59 @@ export class HoverWorld {
   time = 0;
   steps = 0;
   bumps = 0;
+  steals = 0;
   calm = 0;
   score: number;
   private pilots: Pilot[] = [];
   private random: () => number;
   private previous = emptyControls();
   private lastCell = -1;
+  private blocked = new Set<number>();
+  private blockedVersion = 0;
 
-  readonly round: number;
-
-  constructor(round = 0, score = 0, seed = 1995) {
+  constructor({ round = 0, score = 0, seed = 1995 }: WorldOptions = {}) {
     this.round = round;
     this.score = score;
+    this.seed = seed;
     this.arena = new Arena(mazes[round % mazes.length]!);
     this.explored = new Uint8Array(this.arena.width * this.arena.depth);
-    this.random = mulberry32(seed + round);
+    this.random = mulberry32(seed * 31 + round);
     this.flagCount = Math.min(6, 3 + Math.floor(round / 3));
     const counts = {
-      E: Math.min(3, 1 + Math.floor(round / 2)),
+      E: Math.min(3, 1 + Math.floor(round / 3)),
       G: Math.min(3, 1 + Math.floor((round + 1) / 2)),
     };
+    const seekers: Cell[] = [];
+    let player: Cell = { column: 1, row: 1 };
     this.arena.maze.things.forEach((line, row) =>
-      [...line].forEach((thing, column) =>
-        this.place(thing, column, row, counts),
-      ),
+      [...line].forEach((thing, column) => {
+        const cell = { column, row };
+        if (thing === "P") player = cell;
+        if (thing === "E" && counts.E > 0) seekers.push(cell);
+        this.place(thing, cell, counts);
+      }),
     );
+    const stands = placeFlags(this.arena, this.flagCount, this.random, {
+      player,
+      seekers,
+    });
+    for (const [owner, points] of Object.entries(stands) as [Team, Point[]][])
+      for (const point of points)
+        this.flags.push({
+          carrier: null,
+          home: { ...point },
+          loose: false,
+          owner,
+          settle: 0,
+          ...point,
+        });
     this.pilots = this.crafts
       .filter((craft) => craft.kind !== "player")
       .map((craft) => ({
         craft,
         field: null,
+        fieldVersion: -1,
+        fleeing: 0,
         goal: -1,
         replan: 0,
         resting: 0,
@@ -408,48 +316,38 @@ export class HoverWorld {
     this.reveal();
   }
 
-  private place(
-    thing: string,
-    column: number,
-    row: number,
-    counts: { E: number; G: number },
-  ): void {
-    const at = this.arena.center(column, row);
-    if (thing === "P")
-      this.crafts.unshift(newCraft(this.arena, "player", column, row));
-    else if ((thing === "E" || thing === "G") && counts[thing] > 0) {
+  private place(thing: string, cell: Cell, counts: { E: number; G: number }) {
+    if (thing === "P") {
+      this.crafts.unshift(newCraft(this.arena, "player", cell));
+      return;
+    }
+    if ((thing === "E" || thing === "G") && counts[thing] > 0) {
       counts[thing] -= 1;
       this.crafts.push(
-        newCraft(this.arena, thing === "E" ? "seeker" : "hunter", column, row),
+        newCraft(this.arena, thing === "E" ? "seeker" : "hunter", cell),
       );
-    } else this.placeItem(thing, at);
-  }
-
-  private placeItem(
-    thing: string,
-    at: { x: number; y: number; z: number },
-  ): void {
-    const flag = (owner: Team, order: string) => {
-      const rank = order.indexOf(thing);
-      if (rank >= 0 && rank < this.flagCount)
-        this.flags.push({ owner, taken: false, ...at });
-    };
-    flag("blue", blueFlags);
-    flag("red", redFlags);
+      return;
+    }
+    const at = this.arena.center(cell.column, cell.row);
     const pod = podKinds[thing];
     if (pod) this.pods.push({ kind: pod, respawn: 0, ...at });
-    const trap = trapKinds[thing];
-    if (trap) this.traps.push({ kind: trap, ...at });
+    const tile = tileKinds[thing];
+    if (tile)
+      this.tiles.push({ kind: tile[0], dx: tile[1], dz: tile[2], ...at });
   }
 
   get player(): Craft {
     return this.crafts[0]!;
   }
 
-  /** Blue flags the player holds, or red flags the drones hold. */
+  carried(craft: Craft): Flag[] {
+    return this.flags.filter((flag) => flag.carrier === craft);
+  }
+
+  /** Blue flags the player carries, or red flags the drones carry. */
   captured(team: "player" | "rival"): number {
     const owner: Team = team === "player" ? "blue" : "red";
-    return this.flags.filter((flag) => flag.owner === owner && flag.taken)
+    return this.flags.filter((flag) => flag.owner === owner && flag.carrier)
       .length;
   }
 
@@ -464,17 +362,17 @@ export class HoverWorld {
       this.drive(pilot.craft, this.fly(pilot, dt), dt);
     for (const craft of this.crafts) this.move(craft, dt);
     this.collideCrafts();
-    for (const barrier of this.barriers) barrier.age += dt;
-    while (this.barriers[0] && this.barriers[0].age > 15) this.barriers.shift();
-    for (const craft of this.crafts) this.touchTraps(craft);
+    this.ageBarriers(dt);
+    for (const craft of this.crafts) this.touchTiles(craft);
     this.collect(dt);
+    this.carry();
     this.reveal();
     this.finish();
   }
 
   private finish(): void {
     if (this.captured("player") >= this.flagCount) {
-      const home = this.flags.filter((f) => f.owner === "red" && !f.taken);
+      const home = this.flags.filter((f) => f.owner === "red" && !f.carrier);
       this.score +=
         home.length * 250 + Math.max(0, Math.round(180 - this.time)) * 5;
       this.state = "cleared";
@@ -494,9 +392,9 @@ export class HoverWorld {
       for (let dx = -revealRadius; dx <= revealRadius; dx++) {
         const c = column + dx;
         const r = row + dz;
-        if (c < 0 || r < 0 || c >= this.arena.width || r >= this.arena.depth)
-          continue;
-        if (dx * dx + dz * dz <= revealRadius * revealRadius + 1)
+        const inside =
+          c >= 0 && r >= 0 && c < this.arena.width && r < this.arena.depth;
+        if (inside && dx * dx + dz * dz <= revealRadius * revealRadius + 1)
           this.explored[this.arena.index(c, r)] = 1;
       }
   }
@@ -547,7 +445,25 @@ export class HoverWorld {
       z: craft.z + Math.cos(craft.heading) * 2.8,
     });
     if (this.barriers.length > 3) this.barriers.shift();
+    this.rebuildBlocked();
     return true;
+  }
+
+  private ageBarriers(dt: number): void {
+    for (const barrier of this.barriers) barrier.age += dt;
+    let expired = false;
+    while (this.barriers[0] && this.barriers[0].age > 15) {
+      this.barriers.shift();
+      expired = true;
+    }
+    if (expired) this.rebuildBlocked();
+  }
+
+  private rebuildBlocked(): void {
+    this.blocked = new Set(
+      this.barriers.flatMap((barrier) => barrierCells(this.arena, barrier)),
+    );
+    this.blockedVersion += 1;
   }
 
   private drive(craft: Craft, controls: Controls, dt: number): void {
@@ -562,7 +478,14 @@ export class HoverWorld {
     craft.vz -= Math.cos(craft.heading) * push * dt;
     glide(craft, airborne, dt);
     const calmed = craft.kind !== "player" && this.calm > 0 ? 0.5 : 1;
-    limitSpeed(craft, top * calmed);
+    limitSpeed(craft, top * calmed * this.pace(craft));
+  }
+
+  /** Seekers start slow and quicken each round. */
+  private pace(craft: Craft): number {
+    return craft.kind === "seeker"
+      ? Math.min(1.15, 0.62 + this.round * 0.07)
+      : 1;
   }
 
   private move(craft: Craft, dt: number): void {
@@ -586,8 +509,7 @@ export class HoverWorld {
 
   private fall(craft: Craft, dt: number): void {
     const ground = this.arena.heightAt(craft.x, craft.z);
-    const grounded = craft.vy <= 0 && craft.y <= ground + 0.35;
-    if (grounded) {
+    if (craft.vy <= 0 && craft.y <= ground + 0.35) {
       craft.y = ground;
       craft.vy = 0;
       return;
@@ -598,36 +520,26 @@ export class HoverWorld {
   }
 
   private blockCell(craft: Craft, column: number, row: number): void {
-    const halfCell = cellSize / 2;
+    const half = cellSize / 2;
     const centerX = (column + 0.5) * cellSize;
     const centerZ = (row + 0.5) * cellSize;
-    const nearX = Math.max(
-      centerX - halfCell,
-      Math.min(centerX + halfCell, craft.x),
+    const nearX = Math.min(
+      Math.max(craft.x, column * cellSize + 0.01),
+      (column + 1) * cellSize - 0.01,
     );
-    const nearZ = Math.max(
-      centerZ - halfCell,
-      Math.min(centerZ + halfCell, craft.z),
+    const nearZ = Math.min(
+      Math.max(craft.z, row * cellSize + 0.01),
+      (row + 1) * cellSize - 0.01,
     );
     const solid =
       this.arena.isWall(column, row) ||
-      this.arena.heightAt(
-        Math.min(
-          Math.max(nearX, column * cellSize + 0.01),
-          (column + 1) * cellSize - 0.01,
-        ),
-        Math.min(
-          Math.max(nearZ, row * cellSize + 0.01),
-          (row + 1) * cellSize - 0.01,
-        ),
-      ) >
-        craft.y + stepUp;
+      this.arena.heightAt(nearX, nearZ) > craft.y + stepUp;
     if (!solid) return;
     this.pushOut(craft, {
       x: centerX,
       z: centerZ,
-      halfWidth: halfCell,
-      halfDepth: halfCell,
+      halfWidth: half,
+      halfDepth: half,
       heading: 0,
     });
   }
@@ -695,7 +607,7 @@ export class HoverWorld {
     b.z += nz * overlap * (massA / total);
     const closing = (a.vx - b.vx) * nx + (a.vz - b.vz) * nz;
     if (closing <= 0) return;
-    if (closing > 3) this.recordBump(a, b);
+    if (closing > 3) this.ram(a, b, closing);
     const impulse = (1.8 * closing) / total;
     a.vx -= impulse * massB * nx;
     a.vz -= impulse * massB * nz;
@@ -703,63 +615,145 @@ export class HoverWorld {
     b.vz += impulse * massA * nz;
   }
 
-  private recordBump(a: Craft, b: Craft): void {
-    if (a.kind !== "player" && b.kind !== "player") return;
+  /**
+   * Rams are how flags change hands: a hard enough hit on a seeker knocks
+   * one of your red flags loose, and a hunter's hard hit on you knocks one of
+   * its blue flags loose, unless your shield is up.
+   */
+  private ram(a: Craft, b: Craft, closing: number): void {
+    const player = a.kind === "player" ? a : b.kind === "player" ? b : null;
+    if (!player) return;
+    const other = player === a ? b : a;
     this.bumps += 1;
     this.events.push("bump");
-    const hunter = [a, b].find((craft) => craft.kind === "hunter");
-    const pilot = this.pilots.find((candidate) => candidate.craft === hunter);
-    if (pilot) pilot.reversing = 0.9;
+    const pilot = this.pilots.find((candidate) => candidate.craft === other);
+    // A hunter that lands a hit backs off before it comes again.
+    if (other.kind === "hunter" && pilot) {
+      pilot.reversing = 0.9;
+      pilot.resting = 1.6;
+    }
+    if (closing >= stealSpeed) this.steal(player, other);
   }
 
-  private touchTraps(craft: Craft): void {
-    if (craft.trapCooldown > 0) return;
+  private steal(player: Craft, other: Craft): void {
+    if (other.kind === "seeker" && this.knockLoose(other)) {
+      this.steals += 1;
+      this.events.push("steal");
+    } else if (
+      other.kind === "hunter" &&
+      player.shield <= 0 &&
+      this.knockLoose(player)
+    )
+      this.events.push("knocked");
+  }
+
+  /** Drops the carrier's latest flag beside it; true if it had one. */
+  private knockLoose(carrier: Craft): boolean {
+    const flag = this.carried(carrier).at(-1);
+    if (!flag) return false;
+    const angle = this.random() * Math.PI * 2;
+    const x = carrier.x + Math.sin(angle) * 2.4;
+    const z = carrier.z - Math.cos(angle) * 2.4;
+    const cell = this.arena.cellAt(x, z);
+    const open = !this.arena.isWall(cell.column, cell.row);
+    flag.carrier = null;
+    flag.loose = true;
+    flag.settle = 1;
+    flag.x = open ? x : carrier.x;
+    flag.z = open ? z : carrier.z;
+    flag.y = this.arena.heightAt(flag.x, flag.z);
+    return true;
+  }
+
+  private sendHome(flag: Flag): void {
+    flag.carrier = null;
+    flag.loose = false;
+    Object.assign(flag, flag.home);
+  }
+
+  private touchTiles(craft: Craft): void {
+    if (craft.tileCooldown > 0) return;
     if (craft.kind === "player" && craft.shield > 0) return;
-    for (const trap of this.traps) {
-      if (Math.abs(craft.y - trap.y) > 0.4) continue;
-      if (Math.hypot(trap.x - craft.x, trap.z - craft.z) >= 1.6) continue;
-      craft.trapCooldown = 2;
-      if (trap.kind === "hold") {
-        craft.held = 3;
-        craft.vx = craft.vz = 0;
-      } else {
-        const angle = this.random() * Math.PI * 2;
-        craft.vx = Math.sin(angle) * 30;
-        craft.vz = -Math.cos(angle) * 30;
-        craft.fling = 0.7;
-      }
-      if (craft.kind === "player") this.events.push(`trap:${trap.kind}`);
+    for (const tile of this.tiles) {
+      if (Math.abs(craft.y - tile.y) > 0.4) continue;
+      if (Math.hypot(tile.x - craft.x, tile.z - craft.z) >= 1.6) continue;
+      this.applyTile(craft, tile);
+      // The cooldown starts once the tile's own effect is over, so a craft
+      // can drive off a swirl before it catches it again.
+      craft.tileCooldown = Math.max(craft.held, craft.fling) + 1.5;
     }
+  }
+
+  private applyTile(craft: Craft, tile: Tile): void {
+    const mine = craft.kind === "player";
+    if (tile.kind === "stop") {
+      craft.held = 3;
+      craft.vx = craft.vz = 0;
+    } else if (tile.kind === "push") {
+      craft.vx = tile.dx * 30;
+      craft.vz = tile.dz * 30;
+      craft.fling = 0.6;
+    } else {
+      const flag = this.carried(craft).at(-1);
+      if (!flag) return;
+      this.sendHome(flag);
+      this.events.push(mine ? "returned:mine" : "returned:theirs");
+      return;
+    }
+    if (mine) this.events.push(`tile:${tile.kind}`);
   }
 
   private collect(dt: number): void {
     for (const craft of this.crafts) {
       if (craft.kind === "hunter") continue;
-      this.takeFlags(craft);
+      for (const flag of this.flags) this.touchFlag(craft, flag);
       if (craft.kind === "player")
         for (const pod of this.pods) this.takePod(craft, pod);
     }
     for (const pod of this.pods)
       if (pod.respawn > 0) pod.respawn = Math.max(0, pod.respawn - dt);
+    for (const flag of this.flags) flag.settle = Math.max(0, flag.settle - dt);
   }
 
-  private near(craft: Craft, thing: { x: number; y: number; z: number }) {
+  private near(craft: Craft, thing: Point, reach = 1.9): boolean {
     return (
       Math.abs(craft.y - thing.y) < 1.4 &&
-      Math.hypot(thing.x - craft.x, thing.z - craft.z) < 1.9
+      Math.hypot(thing.x - craft.x, thing.z - craft.z) < reach
     );
   }
 
-  private takeFlags(craft: Craft): void {
-    const wanted: Team = craft.kind === "player" ? "blue" : "red";
+  /** The player takes blue flags and returns loose red ones; seekers take
+   * red flags from their stands or the floor. */
+  private touchFlag(craft: Craft, flag: Flag): void {
+    if (flag.carrier || flag.settle > 0 || !this.near(craft, flag)) return;
+    const player = craft.kind === "player";
+    if (player && flag.owner === "red") this.rescue(flag);
+    else if (flag.owner === (player ? "blue" : "red")) this.take(craft, flag);
+  }
+
+  private rescue(flag: Flag): void {
+    if (!flag.loose) return;
+    this.sendHome(flag);
+    this.events.push("rescued");
+    this.score += 50;
+  }
+
+  private take(craft: Craft, flag: Flag): void {
+    flag.carrier = craft;
+    flag.loose = false;
+    if (craft.kind === "player") this.score += 100;
+    this.events.push(`flag:${flag.owner}`);
+    const pilot = this.pilots.find((candidate) => candidate.craft === craft);
+    if (pilot) pilot.resting = Math.max(1.5, 4 - this.round * 0.3);
+  }
+
+  /** Carried flags ride on their craft. */
+  private carry(): void {
     for (const flag of this.flags) {
-      if (flag.taken || flag.owner !== wanted || !this.near(craft, flag))
-        continue;
-      flag.taken = true;
-      if (craft.kind === "player") this.score += 100;
-      this.events.push(`flag:${flag.owner}`);
-      const pilot = this.pilots.find((candidate) => candidate.craft === craft);
-      if (pilot) pilot.resting = 3;
+      if (!flag.carrier) continue;
+      flag.x = flag.carrier.x;
+      flag.y = flag.carrier.y;
+      flag.z = flag.carrier.z;
     }
   }
 
@@ -788,10 +782,6 @@ export class HoverWorld {
         this.lastCell = -1;
       },
       calm: () => (this.calm = 8),
-      thief: () => {
-        const flag = this.flags.find((f) => f.owner === "blue" && f.taken);
-        if (flag) flag.taken = false;
-      },
     };
     const effect = effects[kind];
     if (effect) effect();
@@ -814,17 +804,17 @@ export class HoverWorld {
     return steerToward(pilot, wrapAngle(wanted - craft.heading), dt);
   }
 
-  /** Hunters notice an uncloaked player in plain sight, with a ping. */
+  /** Drones notice an uncloaked player in plain sight; hunters ping. */
   private watch(pilot: Pilot): void {
-    if (pilot.craft.kind !== "hunter") return;
     const { craft } = pilot;
     const player = this.player;
     const sees =
       player.cloak <= 0 &&
-      Math.hypot(player.x - craft.x, player.z - craft.z) < cellSize * 7 &&
-      this.arena.clearLine(craft.x, craft.z, player.x, player.z);
+      Math.hypot(player.x - craft.x, player.z - craft.z) <
+        cellSize * sightCells &&
+      this.arena.clearLine(craft, player);
     if (sees && !pilot.sees) {
-      this.events.push("spotted");
+      if (craft.kind === "hunter") this.events.push("spotted");
       pilot.replan = 0;
     }
     pilot.sees = sees;
@@ -832,60 +822,97 @@ export class HoverWorld {
 
   private plan(pilot: Pilot, dt: number): void {
     pilot.replan -= dt;
-    if (pilot.replan > 0 && pilot.field !== null) return;
+    pilot.fleeing = Math.max(0, pilot.fleeing - dt);
+    const stale =
+      pilot.field === null || pilot.fieldVersion !== this.blockedVersion;
+    if (pilot.replan > 0 && !stale) return;
     pilot.replan = 0.4 + this.random() * 0.2;
     const goal = this.goalFor(pilot);
-    if (goal === pilot.goal && pilot.field !== null) return;
+    if (goal === pilot.goal && !stale) return;
     pilot.goal = goal;
-    pilot.field = this.arena.distanceTo(goal);
-  }
-
-  private cellIndexOf(thing: { x: number; z: number }): number {
-    const { column, row } = this.arena.cellAt(thing.x, thing.z);
-    return this.arena.index(column, row);
+    pilot.field = this.arena.distanceTo(goal, this.blocked);
+    pilot.fieldVersion = this.blockedVersion;
   }
 
   private goalFor(pilot: Pilot): number {
     const { craft } = pilot;
-    if (craft.kind === "seeker") return this.nearestFlag(craft, "red");
-    if (pilot.sees) return this.cellIndexOf(this.player);
-    const here = this.cellIndexOf(craft);
+    if (craft.kind === "seeker") return this.seekerGoal(pilot);
+    if (pilot.sees) return this.arena.indexAt(this.player);
+    const here = this.arena.indexAt(craft);
     if (pilot.goal >= 0 && pilot.field?.[here] !== 0) return pilot.goal;
     return this.guardPost();
   }
 
-  private nearestFlag(craft: Craft, owner: Team): number {
-    let nearest = this.cellIndexOf(craft);
+  /** Seekers fetch red flags, and flee with the ones they carry once they
+   * see the player coming; a cloak lets the player close in. */
+  private seekerGoal(pilot: Pilot): number {
+    const { craft } = pilot;
+    if (pilot.fleeing > 0) return pilot.goal;
+    const close =
+      Math.hypot(this.player.x - craft.x, this.player.z - craft.z) <
+      cellSize * 4;
+    if (pilot.sees && close && this.carried(craft).length > 0) {
+      pilot.fleeing = 2.5;
+      return this.escape(craft);
+    }
+    return this.nearestRedFlag(craft);
+  }
+
+  private escape(craft: Craft): number {
+    const player = this.player;
+    let best = this.arena.indexAt(craft);
+    let bestDistance = -1;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const candidate = this.randomFloorNear(
+        this.arena.cellAt(craft.x, craft.z),
+        5,
+      );
+      const point = this.arena.cellOf(candidate);
+      const distance = Math.hypot(
+        (point.column + 0.5) * cellSize - player.x,
+        (point.row + 0.5) * cellSize - player.z,
+      );
+      if (distance <= bestDistance) continue;
+      bestDistance = distance;
+      best = candidate;
+    }
+    return best;
+  }
+
+  private nearestRedFlag(craft: Craft): number {
+    let nearest = this.arena.indexAt(craft);
     let nearestDistance = Infinity;
     for (const flag of this.flags) {
-      if (flag.taken || flag.owner !== owner) continue;
+      if (flag.carrier || flag.owner !== "red") continue;
       const distance = Math.hypot(flag.x - craft.x, flag.z - craft.z);
       if (distance >= nearestDistance) continue;
       nearestDistance = distance;
-      nearest = this.cellIndexOf(flag);
+      nearest = this.arena.indexAt(flag);
     }
     return nearest;
   }
 
-  /** Hunters defend: they patrol near the blue flags still in play. */
+  /** Hunters defend: they patrol near the blue flags still on their stands. */
   private guardPost(): number {
-    const posts = this.flags.filter((f) => f.owner === "blue" && !f.taken);
-    const post = posts[Math.floor(this.random() * posts.length)];
-    const center = post
-      ? this.arena.cellAt(post.x, post.z)
-      : this.arena.cellAt(this.player.x, this.player.z);
+    const posts = this.flags.filter((f) => f.owner === "blue" && !f.carrier);
+    const post = posts[Math.floor(this.random() * posts.length)] ?? this.player;
+    return this.randomFloorNear(this.arena.cellAt(post.x, post.z), 3);
+  }
+
+  private randomFloorNear(center: Cell, spread: number): number {
     for (let attempt = 0; attempt < 20; attempt++) {
-      const column = center.column + Math.floor(this.random() * 7) - 3;
-      const row = center.row + Math.floor(this.random() * 7) - 3;
-      if (!this.arena.isWall(column, row) && column > 0 && row > 0)
-        return this.arena.index(column, row);
+      const column =
+        center.column + Math.floor(this.random() * (spread * 2 + 1)) - spread;
+      const row =
+        center.row + Math.floor(this.random() * (spread * 2 + 1)) - spread;
+      if (!this.arena.isWall(column, row)) return this.arena.index(column, row);
     }
     return this.arena.index(center.column, center.row);
   }
 
   private waypoint(pilot: Pilot): { x: number; z: number } {
     const field = pilot.field!;
-    let cursor = this.cellIndexOf(pilot.craft);
+    let cursor = this.arena.indexAt(pilot.craft);
     let best = field[cursor] ?? -1;
     for (let look = 0; look < 2; look++) {
       const next = this.arena

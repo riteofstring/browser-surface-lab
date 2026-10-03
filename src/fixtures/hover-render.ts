@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { podIcon, tileTexture } from "./hover-icons";
 import { mazeTextures } from "./hover-textures";
 import {
   barrierHeight,
@@ -18,18 +19,6 @@ const teamColors: Record<CraftKind, number> = {
   hunter: 0x3fae4a,
 };
 const flagColors = { blue: 0x2f6de0, red: 0xd8342c };
-const podColors: Record<PodKind, string> = {
-  spring: "#ffd23a",
-  barrier: "#ff8a2a",
-  cloak: "#9b5cff",
-  green: "#3bff6a",
-  red: "#ff3b3b",
-  shield: "#49e6ff",
-  eraser: "#f2f2f2",
-  calm: "#4a8bff",
-  thief: "#2a2a2a",
-  random: "#ff66cc",
-};
 const lighting = {
   castle: { sky: 1.7, sun: 1.5, fog: [26, 92] },
   city: { sky: 1.0, sun: 0.7, fog: [18, 72] },
@@ -60,33 +49,6 @@ function shadowTexture(): THREE.CanvasTexture {
   context.fillStyle = gradient;
   context.fillRect(0, 0, 64, 64);
   return new THREE.CanvasTexture(canvas);
-}
-
-function padTexture(color: string, pattern: "chevrons" | "cross") {
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 64;
-  const context = canvas.getContext("2d")!;
-  context.fillStyle = "#101010";
-  context.fillRect(0, 0, 64, 64);
-  context.strokeStyle = color;
-  context.lineWidth = 6;
-  context.strokeRect(4, 4, 56, 56);
-  context.beginPath();
-  if (pattern === "cross") {
-    context.moveTo(16, 16);
-    context.lineTo(48, 48);
-    context.moveTo(48, 16);
-    context.lineTo(16, 48);
-  } else
-    for (const y of [22, 38]) {
-      context.moveTo(16, y + 8);
-      context.lineTo(32, y - 6);
-      context.lineTo(48, y + 8);
-    }
-  context.stroke();
-  const result = new THREE.CanvasTexture(canvas);
-  result.colorSpace = THREE.SRGBColorSpace;
-  return result;
 }
 
 function rampGeometry(): THREE.BufferGeometry {
@@ -315,50 +277,60 @@ export function createHoverRenderer(
     return { flag, group, cloth };
   });
 
-  const orbGeometry = track(new THREE.SphereGeometry(0.55, 14, 10));
-  const ringGeometry = track(new THREE.TorusGeometry(0.78, 0.06, 6, 24));
-  const podMaterials = new Map<PodKind, THREE.MeshLambertMaterial>();
-  const podMaterial = (kind: PodKind) => {
-    let material = podMaterials.get(kind);
+  // Pods float in green bubbles with their icon inside, as in the original.
+  const bubbleGeometry = track(new THREE.SphereGeometry(0.75, 16, 12));
+  const bubbleMaterial = track(
+    new THREE.MeshLambertMaterial({
+      color: 0x5dff7a,
+      emissive: 0x1d6a2a,
+      transparent: true,
+      opacity: 0.38,
+      depthWrite: false,
+    }),
+  );
+  const iconMaterials = new Map<PodKind, THREE.SpriteMaterial>();
+  const iconMaterial = (kind: PodKind) => {
+    let material = iconMaterials.get(kind);
     if (!material) {
       material = track(
-        new THREE.MeshLambertMaterial({
-          color: podColors[kind],
-          emissive: podColors[kind],
-          emissiveIntensity: 0.45,
+        new THREE.SpriteMaterial({
+          map: track(podIcon(kind)),
+          depthWrite: false,
         }),
       );
-      podMaterials.set(kind, material);
+      iconMaterials.set(kind, material);
     }
     return material;
   };
   const pods = world.pods.map((pod) => {
     const group = new THREE.Group();
-    const orb = new THREE.Mesh(orbGeometry, podMaterial(pod.kind));
-    const ring = new THREE.Mesh(ringGeometry, podMaterial(pod.kind));
-    group.add(orb, ring);
+    const icon = new THREE.Sprite(iconMaterial(pod.kind));
+    icon.scale.setScalar(1.05);
+    group.add(icon, new THREE.Mesh(bubbleGeometry, bubbleMaterial));
     group.position.set(pod.x, pod.y + 1.1, pod.z);
     scene.add(group);
-    return { pod, group, ring };
+    return { pod, group };
   });
 
-  const padGeometry = track(new THREE.PlaneGeometry(3.2, 3.2));
-  const padMaterials = {
-    fling: track(
-      new THREE.MeshBasicMaterial({
-        map: track(padTexture("#3bff6a", "chevrons")),
-      }),
+  const tileGeometry = track(new THREE.PlaneGeometry(3.2, 3.2));
+  const tileMaterials = {
+    push: track(
+      new THREE.MeshBasicMaterial({ map: track(tileTexture("push")) }),
     ),
-    hold: track(
-      new THREE.MeshBasicMaterial({
-        map: track(padTexture("#ff3b3b", "cross")),
-      }),
+    stop: track(
+      new THREE.MeshBasicMaterial({ map: track(tileTexture("stop")) }),
+    ),
+    return: track(
+      new THREE.MeshBasicMaterial({ map: track(tileTexture("return")) }),
     ),
   };
-  for (const trap of world.traps) {
-    const pad = new THREE.Mesh(padGeometry, padMaterials[trap.kind]);
+  for (const tile of world.tiles) {
+    const pad = new THREE.Mesh(tileGeometry, tileMaterials[tile.kind]);
+    pad.rotation.order = "YXZ";
     pad.rotation.x = -Math.PI / 2;
-    pad.position.set(trap.x, trap.y + 0.03, trap.z);
+    // The arrow texture points up; turn it to the push direction.
+    pad.rotation.y = tile.kind === "push" ? -Math.atan2(tile.dx, -tile.dz) : 0;
+    pad.position.set(tile.x, tile.y + 0.03, tile.z);
     scene.add(pad);
   }
 
@@ -465,17 +437,46 @@ export function createHoverRenderer(
     blob.scale.setScalar(Math.max(0.4, 1 - (craft.y - ground) * 0.18));
   };
 
+  /** Flags stand upright, lie tilted when loose, and ride small on the
+   * back of the craft carrying them so you can see whom to ram. */
+  const syncFlag = (
+    view: (typeof flags)[number],
+    clock: number,
+    stacks: Map<Craft, number>,
+  ) => {
+    const { flag, group, cloth } = view;
+    cloth.rotation.y = Math.sin(clock * 3 + flag.x) * 0.4;
+    const carrier = flag.carrier;
+    if (!carrier) {
+      group.scale.setScalar(1);
+      group.position.set(flag.x, flag.y, flag.z);
+      group.rotation.set(0, 0, flag.loose ? 0.5 : 0);
+      return;
+    }
+    const slot = stacks.get(carrier) ?? 0;
+    stacks.set(carrier, slot + 1);
+    const back = 0.75;
+    const side = (slot - 1) * 0.35;
+    group.scale.setScalar(0.45);
+    group.rotation.set(0, -carrier.heading, 0);
+    group.position.set(
+      carrier.x -
+        Math.sin(carrier.heading) * back +
+        Math.cos(carrier.heading) * side,
+      carrier.y + 0.85,
+      carrier.z +
+        Math.cos(carrier.heading) * back +
+        Math.sin(carrier.heading) * side,
+    );
+  };
+
   const sync = (clock: number) => {
     for (const view of crafts) syncCraft(view, clock);
-    for (const { flag, group, cloth } of flags) {
-      group.visible = !flag.taken;
-      cloth.rotation.y = Math.sin(clock * 3 + flag.x) * 0.4;
-    }
-    for (const { pod, group, ring } of pods) {
+    const stacks = new Map<Craft, number>();
+    for (const view of flags) syncFlag(view, clock, stacks);
+    for (const { pod, group } of pods) {
       group.visible = pod.respawn <= 0;
       group.position.y = pod.y + 1.1 + Math.sin(clock * 2 + pod.x) * 0.15;
-      ring.rotation.x = clock * 1.6;
-      ring.rotation.y = clock * 1.1;
     }
     barriers.forEach((mesh, index) => {
       const barrier = world.barriers[index];

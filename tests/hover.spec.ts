@@ -9,7 +9,7 @@ async function hold(page: Page, key: string, ms: number) {
   await page.keyboard.up(key);
 }
 
-test("hover drives to a flag, pauses with its pixels and resumes on request", async ({
+test("hover drives to a pod, pauses with its pixels and resumes on request", async ({
   page,
 }) => {
   await page.goto("/fixture.html?fixture=hover");
@@ -22,11 +22,15 @@ test("hover drives to a flag, pauses with its pixels and resumes on request", as
 
   await page.getByRole("button", { name: "Start" }).click();
   await expect(page.locator(".hover")).toBeFocused();
-  await hold(page, "ArrowUp", 1400);
-  await expect
-    .poll(async () => (await snapshot(page)).counters.playerFlags)
-    .toBe(1);
-  await expect(page.locator('.hover-pips[data-team="blue"]')).toHaveText("●○○");
+  const start = await snapshot(page);
+  await hold(page, "ArrowUp", 700);
+  await expect(page.locator('.hover-items [data-item="spring"]')).toHaveText(
+    "×1",
+  );
+  // The start faces north, and the spring pod sits one cell ahead.
+  expect(Number((await snapshot(page)).details.z)).toBeLessThan(
+    Number(start.details.z) - 1,
+  );
 
   await page.evaluate(() => window.__surfaceLab!.command("pause"));
   const paused = await snapshot(page);
@@ -56,7 +60,9 @@ test("hover drives to a flag, pauses with its pixels and resumes on request", as
   const after = await page.locator(".hover-viewport").screenshot();
   await page.keyboard.up("ArrowLeft");
   expect(after.equals(before)).toBe(false);
-  expect((await snapshot(page)).counters.playerFlags).toBe(1);
+  await expect(page.locator('.hover-items [data-item="spring"]')).toHaveText(
+    "×1",
+  );
 });
 
 test("hover collects a spring pod, springs with it and resets to round one", async ({
@@ -196,13 +202,10 @@ test.describe("on a touch screen", () => {
         },
         { type, dy },
       );
-    await push("pointerdown", -0.45);
-    await expect
-      .poll(async () => (await snapshot(page)).counters.playerFlags)
-      .toBe(1);
-    await push("pointerup", 0);
     const spring = page.locator('.hover-pad [data-item="spring"]');
+    await push("pointerdown", -0.45);
     await expect(spring).toHaveText("×1");
+    await push("pointerup", 0);
     await page.locator(".hover-pad-jump").tap();
     await expect(spring).toHaveText("×0");
     await page.locator(".hover-pad-pause").tap();

@@ -40,6 +40,14 @@ const firstRound = Math.max(
 
 const items = new Set<keyof Controls>(["jump", "barrier", "cloak"]);
 
+// Flags land at random each game, as in the original; `seed=` replays one
+// layout, for sharing a challenge or for tests.
+const fixedSeed = Number(new URLSearchParams(location.search).get("seed"));
+const newSeed = () =>
+  Number.isInteger(fixedSeed) && fixedSeed > 0
+    ? fixedSeed
+    : Math.floor(Math.random() * 2 ** 31);
+
 const readBest = () => {
   try {
     return Number(localStorage.getItem(bestKey)) || 0;
@@ -87,7 +95,7 @@ export function createHoverFixture(
   const hud = createHud(root);
   const sound = createHoverSound();
 
-  let world = new HoverWorld(firstRound);
+  let world = new HoverWorld({ round: firstRound, seed: newSeed() });
   let controls = emptyControls();
   let view: HoverRenderer | null = null;
   let running = false;
@@ -130,7 +138,7 @@ export function createHoverFixture(
 
   const drainEvents = () => {
     for (const event of world.events.splice(0)) {
-      hud.announce(event, elapsed);
+      hud.announce(event, elapsed, world);
       sound.play(event);
     }
     if (world.state === "lost" && world.score > best) {
@@ -211,8 +219,15 @@ export function createHoverFixture(
     }
     sound.unlock();
     if (world.state === "cleared")
-      startWorld(new HoverWorld(world.round + 1, world.score));
-    else if (world.state === "lost") startWorld(new HoverWorld(firstRound));
+      startWorld(
+        new HoverWorld({
+          round: world.round + 1,
+          score: world.score,
+          seed: world.seed,
+        }),
+      );
+    else if (world.state === "lost")
+      startWorld(new HoverWorld({ round: firstRound, seed: newSeed() }));
     world.state = "playing";
     view?.snapCamera();
     root.focus({ preventScroll: true });
@@ -352,7 +367,7 @@ export function createHoverFixture(
     },
     resume: resumeHost,
     reset() {
-      world = new HoverWorld(firstRound);
+      world = new HoverWorld({ round: firstRound, seed: newSeed() });
       controls = emptyControls();
       elapsed = 0;
       frames = 0;
@@ -388,6 +403,8 @@ export function createHoverFixture(
           state: world.state,
           round: world.round,
           maze: world.arena.maze.name,
+          seed: world.seed,
+          steals: world.steals,
           time: world.time,
           x: player.x,
           y: player.y,

@@ -28,24 +28,45 @@ demos. They are not part of the Tier 1 manifest. They use procedural geometry
 and shaders with no remote assets, cap the drawing-buffer pixel ratio at 1.5,
 release their WebGL context while paused, and share one renderer per document.
 
-`hover` is a playable Three.js take on Microsoft's 1995 _Hover!_, following
-its rules. You drive the red bumper car and collect the blue flags before the
-blue drones collect your red ones; green hunters ping when they spot you and
-ram you. Rounds cycle through three two-tier mazes after the original castle,
-futuristic city and sewer, with 3 flags each at first and up to 6 and more
-drones later. Pods give a spring, wall or cloak to keep (A or Space, S, D),
-or act at once: green light (faster), red light (slower), shield (blocks bad
-pods, traps and knocks), map eraser, slower drones, flag thief and random.
-Green floor traps fling you; red ones hold you for three seconds. The HUD
-follows the original: flags, rear-view mirror, score, items, a radar that
-reveals only explored ground, and speed. `maze=castle|city|sewer` picks the
-first maze, like the original's Maze Type option, and M mutes the synthesised
-sounds. On touch screens a translucent joystick on the left steers and a
-D-pad on the right holds spring, wall, cloak and pause, shown only in play. The mazes and textures are new and procedural, not the original's.
-The world keeps Hover!'s own colours; the theme styles the HUD and its fonts.
-It renders only while a game is in play, caps the pixel ratio at 1.5, and when
-paused by its host keeps a still of the last frame and releases its WebGL
-context. Like the other Three.js demos it is outside the Tier 1 manifest.
+`hover` is a playable Three.js take on Microsoft's 1995 _Hover!_. It keeps the
+original's rules and gives every piece a purpose:
+
+- You drive the red car and collect the blue flags; blue seeker drones collect
+  your red ones. Only you and the seekers carry flags, and carried flags ride
+  visibly on their car. Green hunters guard the blue flags, ping when they spot
+  you, and ram you.
+- Flags change hands by ramming. Hit a seeker hard enough (a head-on hit, or
+  any hit under a green light) and one of your red flags drops loose; touch it
+  to send it home. A hunter's hard hit knocks one of your blue flags loose for
+  you to grab again. Seekers carrying flags flee once they see you close by.
+- Flag stands are random each game, as in the original, but fair: blue stands
+  sit a moderate drive from you and red stands a longer drive from the slower
+  seekers. `seed=` replays a layout.
+- Pods float in green bubbles showing their icon, so you can choose. Kept
+  pods: a spring (A or Space) to jump onto ledges and over walls, tiles and
+  drones; a wall (S) dropped behind you, which drones must route around; and
+  a cloak (D) so that hunters lose you and seekers don't flee while you close
+  in. Instant pods: green light (faster, harder rams), red light (slower),
+  shield (no knock-loose, tiles or power-downs), map eraser, slower drones and
+  random.
+- Floor tiles: arrows push you the way they point, swirls hold you, and the
+  flag tile sends the flag you carry home. Ramming a seeker onto it works too.
+- Rounds cycle through three two-tier mazes after the original castle,
+  futuristic city and sewer. Flags start at 3 a side and rise to 6, seekers
+  quicken, and more drones join. You score per flag, per red flag kept and for
+  time.
+
+The HUD follows the original: flags, rear-view mirror, score, items, a radar
+that reveals only explored ground, and speed. `maze=castle|city|sewer` picks
+the first maze, like the original's Maze Type option, and M mutes the
+synthesised sounds. On touch screens a translucent joystick steers and a
+D-pad holds spring, wall, cloak and pause, shown only in play. The mazes and
+textures are new and procedural, not the original's; the world keeps
+Hover!'s colours while the theme styles the HUD and its fonts. The rules have
+unit tests (`pnpm test:rules`). The game renders only during play, caps the
+pixel ratio at 1.5, and when paused by its host keeps a still of the last frame
+and releases its WebGL context. Like the other Three.js demos it is outside the
+Tier 1 manifest.
 
 ## Pages
 

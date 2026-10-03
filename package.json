@@ -14,7 +14,8 @@
     "integrity": "node scripts/verify-protected-inputs.mjs",
     "test:browser": "playwright test",
     "test:browser:headed": "playwright test --headed",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:rules": "node --test tests/hover-rules.unit.ts"
   },
   "dependencies": {
     "@xterm/addon-webgl": "0.19.0",

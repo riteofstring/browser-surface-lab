@@ -4,22 +4,32 @@ import { cellSize, type GameState, type HoverWorld } from "./hover-world";
 const mapScale = 5;
 const team = { blue: "#2f6de0", red: "#d8342c", green: "#3fae4a" };
 
-const banners: Record<string, string> = {
-  "pod:spring": "Spring",
-  "pod:barrier": "Wall",
-  "pod:cloak": "Cloak",
-  "pod:green": "Green light! Speed up",
+// What each event means for the player, with the move it suggests.
+const banners: Record<string, string | ((world: HoverWorld) => string)> = {
+  "pod:spring": "Spring: A jumps onto ledges and over walls",
+  "pod:barrier": "Wall: S drops it behind you",
+  "pod:cloak": "Cloak: D hides you from drones",
+  "pod:green": "Green light! Ram them now",
   "pod:red": "Red light! Slowed",
-  "pod:shield": "Shield",
+  "pod:shield": "Shield: rams and tiles can't touch you",
   "pod:eraser": "Map erased",
   "pod:calm": "Drones slowed",
-  "pod:thief": "A flag was stolen back",
   "pod:blocked": "Shield blocked it",
   "flag:blue": "Flag!",
-  "flag:red": "They took a flag",
-  "trap:fling": "Whoa!",
-  "trap:hold": "Stuck!",
-  spotted: "Spotted!",
+  "flag:red": "They took a flag. Ram the blue car to knock it loose",
+  steal: "Knocked it loose! Grab your flag",
+  rescued: "Flag home",
+  knocked: "Rammed! You dropped a flag",
+  "returned:mine": "That tile sent a flag home",
+  "returned:theirs": "Their flag went home",
+  "tile:push": "Whoa!",
+  "tile:stop": "Stuck!",
+  spotted: (world) =>
+    world.inventory.cloak > 0
+      ? "Spotted! D to cloak"
+      : world.inventory.barrier > 0
+        ? "Spotted! S drops a wall behind you"
+        : "Spotted!",
 };
 
 const pips = (count: number, total: number) =>
@@ -53,7 +63,7 @@ interface Overlay {
 
 export function overlayFor(world: HoverWorld, best: number): Overlay | null {
   const maze = world.arena.maze.look.label;
-  const goal = `Collect ${world.flagCount} blue flags before the blue drones take your ${world.flagCount} red ones. Green hunters ram you.`;
+  const goal = `Grab ${world.flagCount} blue flags before the blue cars take your ${world.flagCount} red ones. Ram a blue car to knock a flag loose; green hunters ram you to do the same.`;
   const copy: Record<Exclude<GameState, "playing">, Overlay> = {
     ready: {
       heading: "HOVER!",
@@ -166,7 +176,7 @@ export function createHud(root: HTMLElement) {
       );
     };
     for (const flag of world.flags)
-      if (!flag.taken) dot(flag.x, flag.z, team[flag.owner], 4);
+      if (!flag.carrier) dot(flag.x, flag.z, team[flag.owner], 4);
     for (const craft of world.crafts.slice(1))
       dot(
         craft.x,
@@ -205,13 +215,13 @@ export function createHud(root: HTMLElement) {
         mirror.style.cssText = `left:${mirrorBox.left}px;top:${mirrorBox.top}px;width:${mirrorBox.width}px;height:${mirrorBox.height}px`;
     },
     drawMap,
-    announce(event: string, clock: number) {
-      const text = banners[event];
-      if (!text) return;
-      banner.textContent = text;
+    announce(event: string, clock: number, world: HoverWorld) {
+      const copy = banners[event];
+      if (!copy) return;
+      banner.textContent = typeof copy === "function" ? copy(world) : copy;
       banner.dataset.tone = event.split(":")[0];
       banner.hidden = false;
-      bannerTime = clock + 1.3;
+      bannerTime = clock + 2.2;
     },
   };
 }

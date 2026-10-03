@@ -174,8 +174,9 @@
   background: color-mix(in srgb, var(--lab-page) 70%, transparent);
   font-size: calc(var(--lab-font-size-heading) * 0.9);
   font-weight: var(--lab-font-weight-heading);
+  max-width: min(90%, 30em);
+  text-align: center;
   transform: translateX(-50%);
-  white-space: nowrap;
 }
 .hover-banner[hidden] {
   display: none;
