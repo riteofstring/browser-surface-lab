@@ -1,5 +1,5 @@
 {
-  "aggregate": "557d77e0e3d3cb2d41455b9568c4ce6664fb797ec1aca535981f804ad2f11490",
+  "aggregate": "a64aaeed446ba17d745261ca7c991cb16873d5fcc7b93c117750d50e51e55068",
   "entries": [
     {
       "path": ".code-polishy.json",
@@ -318,8 +318,8 @@
     },
     {
       "path": "tests/hover.spec.ts",
-      "sha256": "3644e32e1e79729dbe38023eb216c7013cf16643412d5f9f1bf62a612b07e2c1",
-      "size": 11660
+      "sha256": "6be8dccf11801c6a6ff3eee98f19b7bfe59970f2f3a1c5d9d5f88b29de2d0660",
+      "size": 11693
     },
     {
       "path": "tests/theme.spec.ts",

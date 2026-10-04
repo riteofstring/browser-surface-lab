@@ -237,7 +237,9 @@ test("hover loaded with autostart=0 creates no graphics until resumed", async ({
   await expect(page.locator(".hover-canvas canvas")).toHaveCount(0);
   await page.evaluate(() => window.__surfaceLab!.command("resume"));
   await expect(page.locator(".hover-canvas canvas")).toHaveCount(1);
-  expect((await snapshot(page)).counters.frames).toBeGreaterThan(0);
+  await expect
+    .poll(async () => (await snapshot(page)).counters.frames)
+    .toBeGreaterThan(0);
 });
 
 test("a host tint washes the view only while the game is paused", async ({
