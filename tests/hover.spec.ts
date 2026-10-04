@@ -16,6 +16,9 @@ test("hover drives to a pod, pauses with its pixels and resumes on request", asy
   test.setTimeout(90_000);
   await page.goto("/fixture.html?fixture=hover");
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+  await expect
+    .poll(async () => (await snapshot(page)).counters.frames)
+    .toBeGreaterThan(0);
   const ready = await snapshot(page);
   expect(ready.supported).toBe(true);
   expect(ready.details.state).toBe("ready");
